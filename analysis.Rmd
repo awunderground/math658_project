@@ -1,0 +1,200 @@
+---
+output:
+  pdf_document
+fontsize: 12pt
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(dev = "cairo_pdf")
+```
+
+```{r}
+library(tidyverse)
+library(knitr)
+```
+
+## Sampling Frame
+
+### Download the data
+
+```{r download-data}
+# file path to csv with addresses
+aru_file_path <- "https://opendata.arcgis.com/datasets/c3c0ae91dca54c5d9ce56962fa0dd645_68.csv"
+
+ap_file_path <- "https://opendata.arcgis.com/datasets/aa514416aaf74fdc94748f1e56e7cc8a_0.csv"
+
+# create a directory for downloading the data
+if (!dir.exists("data/")) {
+  dir.create("data")
+}
+
+# if the data doesn't already exist, download the data
+if (!file.exists("data/aru.csv")) {
+  download.file(aru_file_path, "data/aru.csv")
+}
+
+if (!file.exists("data/ap.csv")) {
+  download.file(ap_file_path, "data/ap.csv")
+}
+```
+
+### Address Residential Units
+
+The first dataset is [Address Residential Units](http://opendata.dc.gov/datasets/address-residential-units)
+
+The dataset does not contain a variable for quadrant, so we extract quadrant from the full address.
+
+```{r}
+aru <- read_csv("data/aru.csv") %>%
+  rename_all(tolower) %>%
+  select(unit_id, address_id, fulladdress, status, unitnum, unittype)
+
+# extract quadrant
+aru <- aru %>%
+  mutate(quadrant = str_sub(fulladdress, start = -2, end = -1))
+```
+
+Address Residential Units contains residential units with status set to "RETIRED". We drop these cases as well. 
+
+```{r}
+count(aru, status) %>%
+  kable()
+```
+
+```{r}
+aru <- aru %>%
+  filter(status != "RETIRE")
+```
+
+### Adress Points
+
+```{r}
+# load the data and convert the variable names to lower case
+ap <- read_csv("data/ap.csv", guess_max = 10000) %>%
+  rename_all(tolower) %>%
+  select(address_id, status, type_, entrancetype, quadrant, fulladdress, objectid_1, assessment_nbhd, cfsa_name, census_tract, vote_prcnct, ward, zipcode, anc, census_block, census_blockgroup, latitude, longitude, active_res_unit_count, res_type, active_res_occupancy_count) 
+```
+
+Address Points contains residential units, non-residential units, and mixed-use units. Residential units and mixed-use units contain residences that belong to our sampling frame. We drop non-residential units. 
+
+```{r}
+count(ap, res_type) %>%
+  kable()
+```
+
+```{r}
+ap <- ap %>%
+  filter(res_type != "NON RESIDENTIAL")
+```
+
+Address points contains residential units with status set to "RETIRED". We drop these cases as well. 
+
+```{r}
+count(ap, status) %>%
+  kable()
+```
+
+```{r}
+ap <- ap %>%
+  filter(status != "RETIRE")
+```
+
+After the above filtering, there are 98 observations from Address Points and 3,706 observations in Address Residential Units that have missing addresses. We investigated joining the two datasets on `address_id` to fill in the address but all records missing an address in one dataset were missing an address in the other dataset. 
+
+We dropped the missing values which represented about 1.5 percent of observations in Address Residential Units and 0.07 percent of observations in Address Points. 
+
+```{r}
+ap <- ap %>%
+  filter(!is.na(fulladdress))
+
+aru <- aru %>%
+  filter(!is.na(fulladdress))
+```
+
+```{r}
+missing_aru <- filter(aru, is.na(fulladdress))
+
+# join ap to aru missing
+
+missing_aru <- left_join(missing_aru, ap, by = "address_id")
+
+anti_join(missing_aru, ap, by = "address_id")
+
+
+count(missing_aru, fulladdress.y)
+
+missing_ap <- filter(ap, is.na(fulladdress))
+
+missing_ap <- left_join(missing_ap, aru, by = "address_id")
+
+anti_join(missing_ap, aru, by = "address_id")
+
+count(missing_ap, fulladdress.y)
+
+# merge using address id
+```
+
+### Merge variables
+
+Address Points has interesting variables not present in Address Residential Units. So we merge the Address Points dataset with the Address Residential Units dataset. The join works for all but 572 cases, most of which are in a new building at the Wharf. 
+
+```{r}
+aru_expanded <- aru %>%
+  select(-status) %>%
+  left_join(ap, by = c("fulladdress", "address_id")) %>%
+  select(quadrant = quadrant.x, everything(), -quadrant.y)
+
+anti_join(aru, ap, by = c("fulladdress", "address_id"))
+```
+
+### Combination
+
+Next, we need to drop addresses in the Address Points dataset that exist in the Address Residential Units dataset so we don't overcount addresses in multi-dwelling units. 
+
+```{r}
+ap <- ap %>%
+  filter(!address_id %in% unique(aru_expanded$address_id))
+```
+
+Finally, we can combine the two datasets to create a sampling frame that contains approximately every residential address in Washington D.C.
+
+
+```{r}
+sampling_frame <- bind_rows(ap, aru_expanded) 
+
+#summarize_all(addresses, list(~sum(is.na(.))))
+
+write_csv(sampling_frame, "sampling_frame.csv")
+```
+
+
+
+
+
+
+
+
+
+```{r}
+filter(aru, str_detect(fulladdress, "1930 NEW HAMPSHIRE"))
+
+filter(ap, str_detect(fulladdress, "1930 NEW HAMPSHIRE"))
+
+```
+
+## Pilot survey
+
+```{r}
+set.seed(20190714)
+
+pilot_sample <- sampling_frame %>%
+  group_by(quadrant) %>%
+  sample_n(25)
+
+write_csv(pilot_sample, "data/pilot_sample.csv")
+```
