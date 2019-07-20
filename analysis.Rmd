@@ -6,14 +6,14 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include=FALSE}
+```{r rmarkdown-setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
 knitr::opts_chunk$set(dev = "cairo_pdf")
 ```
 
-```{r}
+```{r r-setup}
 library(tidyverse)
 library(knitr)
 ```
@@ -49,7 +49,7 @@ The first dataset is [Address Residential Units](http://opendata.dc.gov/datasets
 
 The dataset does not contain a variable for quadrant, so we extract quadrant from the full address.
 
-```{r}
+```{r load-aru}
 aru <- read_csv("data/aru.csv") %>%
   rename_all(tolower) %>%
   select(unit_id, address_id, fulladdress, status, unitnum, unittype)
@@ -73,7 +73,7 @@ aru <- aru %>%
 
 ### Adress Points
 
-```{r}
+```{r load-ap}
 # load the data and convert the variable names to lower case
 ap <- read_csv("data/ap.csv", guess_max = 10000) %>%
   rename_all(tolower) %>%
@@ -189,7 +189,7 @@ filter(ap, str_detect(fulladdress, "1930 NEW HAMPSHIRE"))
 
 ## Pilot survey
 
-```{r}
+```{r write-pilot-survey}
 set.seed(20190714)
 
 pilot_sample <- sampling_frame %>%
@@ -197,4 +197,87 @@ pilot_sample <- sampling_frame %>%
   sample_n(25)
 
 write_csv(pilot_sample, "data/pilot_sample.csv")
+
+rm(pilot_sample)
 ```
+
+## Picking stratum sizes
+
+For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may find an optimal allocation using the followng algorithm.
+
+1) Assign, for each stratum, 1 unit to be selected for the sample. 
+
+2) Fil in the following table and number these values starting from 1, inc decreasing order. 
+
+| | | | |
+|---|---|---|---|
+| $\frac{N^2_1S^2_1}{1 \cdot 2}$ | $\frac{N^2_1S^2_1}{2 \cdot 3}$ | $\frac{N^2_1S^2_1}{3 \cdot 4}$ | ... |
+| $\frac{N^2_1S^2_1}{1 \cdot 2}$ | $\frac{N^2_1S^2_1}{2 \cdot 3}$ | $\frac{N^2_1S^2_1}{3 \cdot 4}$ | ... |
+| $\cdot$ | $\cdot$ | $\cdot$ | ... |
+| $\cdot$ | $\cdot$ | $\cdot$ | ... |
+| $\cdot$ | $\cdot$ | $\cdot$ | ... |
+| $\frac{N^2_HS^2_H}{1 \cdot 2}$ | $\frac{N^2_HS^2_H}{2 \cdot 3}$ | $\frac{N^2_HS^2_H}{3 \cdot 4}$ | ... |
+
+3) SInce the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\bar{y}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \frac{1}{N^2} \sum_{h = 1}^H ((N^2_h - N_h) S^2_h)$
+
+4) Pick value (1) from the table and increase the associated stratum's sample size by 1, o that the updated allocation is $(n_{12}, n_{22}, ..., n_{H2})$, where exactly one of the $n_{h2}$'s is equal to 2 and the rest are equal to 1. Then, compute $V(\bar{y}_{str}|n_{12}, ..., n_{H2} = V(\bar{y}_{str}|n_{11}, ..., n_{H1}) - \frac{1}{N^2}$ where "(1)" represents the largest value from the table. If $V(\bar{y}_{str}|N_{12}, ..., n_{H2} \leq V_0$, then stop with $n_1 = n_{12}, ..., N_H = N_{H2}$. Otherwise, go to step 5. 
+
+5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\bar{y}_{str}|n_{13}, ..., n_{H3}) = V(\bar{y}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\bar{y}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\bar{y}_str|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j + \cdot\cdot\cdot + n_{Hj}$.
+
+To find an optimal allocation for $V(\hat{p}_{str})$, proceed in the same manner as above, but with $V(\hat{p}_{str}|n_{11} = 1) = (\frac{1}{N^2}\sum_{h = 1}^H(N^2_hp_h(1-p_h))$. Instead of using a pilot survey, we use $\hat{p} = 0.5$ to get the theoretical maximum for a proportion. 
+
+
+### Proportion
+
+### Sample mean
+
+```{r}
+pilot_sample <- read_csv("data/pilot_sample_completed.csv") %>%
+  mutate(land_value = ifelse(!is.na(rf_land_value), 
+                             rf_land_value, 
+                             land_value),
+         improvement_value = ifelse(!is.na(rf_improvement_value), 
+                                    rf_improvement_value, 
+                                    improvement_value)) %>%
+  mutate(property_value = land_value + improvement_value) %>%
+  mutate(property_value = ifelse(unittype == "RENTAL" & 
+                                   active_res_occupancy_count > 4 &
+                                   property_value > 2000000,
+                                 property_value / active_res_occupancy_count,
+                                 property_value
+                                 ))
+  
+s <- pilot_sample %>%
+  group_by(stratum = quadrant) %>%
+  summarize(s = sqrt(var(property_value, na.rm = TRUE)), missing_prop = mean(is.na(property_value)))
+
+Nh <- sampling_frame %>%
+  count(stratum = quadrant) %>%
+  rename(N = n)
+
+n_strata <- 
+  tibble(n = c(1:25, 1:25, 1:25, 1:25),
+       stratum = c(rep("NE", 25), rep("NW", 25), rep("SE", 25), rep("SW", 25))) %>%
+  left_join(Nh, by = "stratum") %>%
+  left_join(s, by = "stratum")
+
+
+n_strata %>%
+  mutate(N = N * (1 - missing_prop))
+
+
+stratum_N
+
+stratum_variance <- data %>%
+  group_by(quadrant) %>%
+  summarize(var(variable))
+
+
+```
+
+
+* proportional reduction in $N$
+
+
+
+
