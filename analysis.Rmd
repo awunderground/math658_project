@@ -10,7 +10,16 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(message = FALSE)
 knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(size = "footnotesize")
 knitr::opts_chunk$set(dev = "cairo_pdf")
+
+options(scipen = 999)
+
+def.chunk.hook <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\\", options$size, "\n\n", x, "\n\n \\normalsize"), x)
+})
 ```
 
 ```{r r-setup}
@@ -24,9 +33,11 @@ library(knitr)
 
 ```{r download-data}
 # file path to csv with addresses
-aru_file_path <- "https://opendata.arcgis.com/datasets/c3c0ae91dca54c5d9ce56962fa0dd645_68.csv"
+aru_file_path <- 
+  "https://opendata.arcgis.com/datasets/c3c0ae91dca54c5d9ce56962fa0dd645_68.csv"
 
-ap_file_path <- "https://opendata.arcgis.com/datasets/aa514416aaf74fdc94748f1e56e7cc8a_0.csv"
+ap_file_path <- 
+  "https://opendata.arcgis.com/datasets/aa514416aaf74fdc94748f1e56e7cc8a_0.csv"
 
 # create a directory for downloading the data
 if (!dir.exists("data/")) {
@@ -77,7 +88,10 @@ aru <- aru %>%
 # load the data and convert the variable names to lower case
 ap <- read_csv("data/ap.csv", guess_max = 10000) %>%
   rename_all(tolower) %>%
-  select(address_id, status, type_, entrancetype, quadrant, fulladdress, objectid_1, assessment_nbhd, cfsa_name, census_tract, vote_prcnct, ward, zipcode, anc, census_block, census_blockgroup, latitude, longitude, active_res_unit_count, res_type, active_res_occupancy_count) 
+  select(address_id, status, type_, entrancetype, quadrant, fulladdress, 
+         objectid_1, assessment_nbhd, cfsa_name, census_tract, vote_prcnct, 
+         ward, zipcode, anc, census_block, census_blockgroup, latitude, 
+         longitude, active_res_unit_count, res_type, active_res_occupancy_count) 
 ```
 
 Address Points contains residential units, non-residential units, and mixed-use units. Residential units and mixed-use units contain residences that belong to our sampling frame. We drop non-residential units. 
@@ -203,33 +217,48 @@ rm(pilot_sample)
 
 ## Picking stratum sizes
 
-For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may find an optimal allocation using the followng algorithm.
+### Sample mean
+
+We begin with a derivation of the formula for calculating priority values for $\bar{y}$.
+
+Decomposition of $V(\bar{y}_h)$ for stratum $h$:
+
+< will add later>
+
+Decomposition of $V(\bar{y}_{str})$
+
+< will add later>
+
+Many of the terms int he calculation of prioirty values will be vary large, so we can express them as 
+
+$\frac{N_1S_1}{\sqrt{1 \cdot 2}}$, $\frac{N_2S_2}{\sqrt{1 \cdot 2}}$, ..., $\frac{N_HS_H}{\sqrt{1 \cdot 2}}$ (12.36)
+
+\hfill
+
+For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may find an optimal allocation using the followng algorithm:
 
 1) Assign, for each stratum, 1 unit to be selected for the sample. 
 
-2) Fil in the following table and number these values starting from 1, inc decreasing order. 
+2) Fill in the following table and number these values starting from 1, in decreasing order. 
 
 | | | | |
 |---|---|---|---|
-| $\frac{N^2_1S^2_1}{1 \cdot 2}$ | $\frac{N^2_1S^2_1}{2 \cdot 3}$ | $\frac{N^2_1S^2_1}{3 \cdot 4}$ | ... |
-| $\frac{N^2_1S^2_1}{1 \cdot 2}$ | $\frac{N^2_1S^2_1}{2 \cdot 3}$ | $\frac{N^2_1S^2_1}{3 \cdot 4}$ | ... |
+| $\frac{N_1S_1}{\sqrt{1 \cdot 2}}$ | $\frac{N_1S_1}{\sqrt{2 \cdot 3}}$ | $\frac{N_1S_1}{\sqrt{3 \cdot 4}}$ | ... |
+| $\frac{N_2S_2}{\sqrt{1 \cdot 2}}$ | $\frac{N_2S_2}{\sqrt{2 \cdot 3}}$ | $\frac{N_2S_2}{\sqrt{3 \cdot 4}}$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
-| $\frac{N^2_HS^2_H}{1 \cdot 2}$ | $\frac{N^2_HS^2_H}{2 \cdot 3}$ | $\frac{N^2_HS^2_H}{3 \cdot 4}$ | ... |
+| $\frac{N_HS_H}{\sqrt{1 \cdot 2}}$ | $\frac{N_HS_H}{\sqrt{2 \cdot 3}}$ | $\frac{N_HS_H}{\sqrt{3 \cdot 4}}$ | ... |
 
-3) SInce the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\bar{y}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \frac{1}{N^2} \sum_{h = 1}^H ((N^2_h - N_h) S^2_h)$
+3) Since the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\bar{y}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \frac{1}{N^2} \sum_{h = 1}^H ((N^2_h - N_h) S^2_h)$
 
 4) Pick value (1) from the table and increase the associated stratum's sample size by 1, o that the updated allocation is $(n_{12}, n_{22}, ..., n_{H2})$, where exactly one of the $n_{h2}$'s is equal to 2 and the rest are equal to 1. Then, compute $V(\bar{y}_{str}|n_{12}, ..., n_{H2} = V(\bar{y}_{str}|n_{11}, ..., n_{H1}) - \frac{1}{N^2}$ where "(1)" represents the largest value from the table. If $V(\bar{y}_{str}|N_{12}, ..., n_{H2} \leq V_0$, then stop with $n_1 = n_{12}, ..., N_H = N_{H2}$. Otherwise, go to step 5. 
 
-5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\bar{y}_{str}|n_{13}, ..., n_{H3}) = V(\bar{y}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\bar{y}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\bar{y}_str|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j + \cdot\cdot\cdot + n_{Hj}$.
+5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\bar{y}_{str}|n_{13}, ..., n_{H3}) = V(\bar{y}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\bar{y}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\bar{y}_str|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
 
 To find an optimal allocation for $V(\hat{p}_{str})$, proceed in the same manner as above, but with $V(\hat{p}_{str}|n_{11} = 1) = (\frac{1}{N^2}\sum_{h = 1}^H(N^2_hp_h(1-p_h))$. Instead of using a pilot survey, we use $\hat{p} = 0.5$ to get the theoretical maximum for a proportion. 
 
-
-### Proportion
-
-### Sample mean
+\hfill
 
 ```{r}
 pilot_sample <- read_csv("data/pilot_sample_completed.csv") %>%
@@ -247,37 +276,95 @@ pilot_sample <- read_csv("data/pilot_sample_completed.csv") %>%
                                  property_value
                                  ))
   
-s <- pilot_sample %>%
+s2 <- pilot_sample %>%
   group_by(stratum = quadrant) %>%
-  summarize(s = sqrt(var(property_value, na.rm = TRUE)), missing_prop = mean(is.na(property_value)))
+  summarize(s2 = var(property_value, na.rm = TRUE), 
+            missing_prop = mean(is.na(property_value)))
 
 Nh <- sampling_frame %>%
   count(stratum = quadrant) %>%
   rename(N = n)
 
+strata <- left_join(s2, Nh, by = "stratum")
+
+
+
+kable(strata)
+
 n_strata <- 
-  tibble(n = c(1:25, 1:25, 1:25, 1:25),
-       stratum = c(rep("NE", 25), rep("NW", 25), rep("SE", 25), rep("SW", 25))) %>%
+  tibble(n = c(1:500, 1:500, 1:500, 1:500),
+       stratum = c(rep("NE", 500), rep("NW", 500), rep("SE", 500), rep("SW", 500))) %>%
   left_join(Nh, by = "stratum") %>%
-  left_join(s, by = "stratum")
+  left_join(s2, by = "stratum")
 
+rm(s2, Nh)
 
-n_strata %>%
-  mutate(N = N * (1 - missing_prop))
-
-
-stratum_N
-
-stratum_variance <- data %>%
-  group_by(quadrant) %>%
-  summarize(var(variable))
-
-
+# step 2
+priority_values <- n_strata %>%
+  # adjust N because of missingness
+  mutate(N = N * (1 - missing_prop)) %>%
+  group_by(stratum) %>%
+  mutate(priority_value = (N^2 * s2) / (n * lag(n)))
 ```
 
 
-* proportional reduction in $N$
+Step 3: $V(\bar{y}|1, 1, 1, 1) = \sum_{h = 1}^4 N_h(N_h - 1) S_h^2$
+
+```{r}
+# step 3  
+starting_variance <- strata %>%
+  mutate(N = N * (1 - missing_prop)) %>%
+  mutate(strata_variance = N * (N - 1) * s2) %>%
+  summarize(V = sum(strata_variance)) %>%
+  pull()
+```
+
+Step 4:
+
+```{r}
+boom <- priority_values %>%
+  ungroup() %>%
+  arrange(desc(priority_value)) %>%
+  mutate(agg_priority_value = cumsum(priority_value)) %>%
+  mutate(boom = starting_variance - agg_priority_value)
+```
 
 
 
 
+### Proportion
+
+Determining exact optimal allocation for $\hat{p}$ is different than $\bar{y}$. We begin with a derivation of the formula for calculating priority values for $\hat{p}$.
+
+\hfill
+
+For $p_h$, $S^2_h = [\frac{N_h}{N_h - 1}] p_h(1 - p_h)$.
+
+$V(\hat{p}_{str}) = \frac{1}{N^2}(\sum_{h = 1}^H N_h(N_h - 1)S_h^2 - \frac{N_1^2S_1^2}{1 \cdot 2} - \cdot\cdot\cdot - \frac{N_H^2S_H^2}{(n_H - 1)n_H})$
+
+$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N_h(N_h - 1) S_h^2}{N^2} - \frac{N_1^2S_1^2}{N^2(1 \cdot 2)} - \cdot\cdot\cdot \frac{N_H^2 S_H^2}{N^2 (n_H - 1)(n_H)}$
+
+$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N_h(N_h - 1) S_h^2}{N^2} - \frac{N_1^3 p_1(1 - p_1)}{N^2(1 \cdot 2)} - \cdot\cdot\cdot \frac{N_H^3 p_H(1 - p_H)}{N^2 (n_H - 1)(n_H)}$
+
+\hfill
+
+For a desired bound on $V_0$ on the sampling variance $V(\hat{p}_{str})$, we may find an optimal allocation using the following algorithm:
+
+1) Assign, for each stratum, 1 unit to be selected for the sample. 
+
+2) Fill in the following table and number these values starting from 1, in decreasing order. We assume $p_h = 0.5$ because that is where the variance reaches its global maximum.
+
+| | | | |
+|---|---|---|---|
+| $\frac{\frac{1}{4}N_1^3}{N^2 \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_1^3}{N^2 \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_1^3}{N^2 \cdot 3 \cdot 4}$ | ... |
+| $\frac{\frac{1}{4}N_2^3}{N^2 \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_2^3}{N^2 \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_2^3}{N^2 \cdot 3 \cdot 4}$ | ... |
+| $\cdot$ | $\cdot$ | $\cdot$ | ... |
+| $\cdot$ | $\cdot$ | $\cdot$ | ... |
+| $\cdot$ | $\cdot$ | $\cdot$ | ... |
+| $\frac{\frac{1}{4}N_H^3}{N^2 \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_H^3}{N^2 \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_H^3}{N^2 \cdot 3 \cdot 4}$ | ... |
+
+3) Since the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\hat{p}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \frac{1}{N^2} \sum_{h = 1}^H ((N^2_h - N_h) S^2_h)$
+
+4) Pick value (1) from the table and increase the associated stratum's sample size by 1, o that the updated allocation is $(n_{12}, n_{22}, ..., n_{H2})$, where exactly one of the $n_{h2}$'s is equal to 2 and the rest are equal to 1. Then, compute $V(\hat{p}_{str}|n_{12}, ..., n_{H2} = V(\hat{p}_{str}|n_{11}, ..., n_{H1}) - \frac{1}{N^2}$ where "(1)" represents the largest value from the table. If $V(\hat{p}_{str}|N_{12}, ..., n_{H2} \leq V_0$, then stop with $n_1 = n_{12}, ..., N_H = N_{H2}$. Otherwise, go to step 5. 
+
+5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\hat{p}_{str}|n_{13}, ..., n_{H3}) = V(\hat{p}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\hat{p}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\hat{p}_{str}|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
