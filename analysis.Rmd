@@ -163,6 +163,8 @@ aru_expanded <- aru %>%
   select(quadrant = quadrant.x, everything(), -quadrant.y)
 
 anti_join(aru, ap, by = c("fulladdress", "address_id"))
+
+rm(aru)
 ```
 
 ### Combination
@@ -180,6 +182,8 @@ Finally, we can combine the two datasets to create a sampling frame that contain
 ```{r}
 sampling_frame <- bind_rows(ap, aru_expanded) 
 
+rm(ap, aru_expanded)
+
 #summarize_all(addresses, list(~sum(is.na(.))))
 
 write_csv(sampling_frame, "sampling_frame.csv")
@@ -189,16 +193,6 @@ write_csv(sampling_frame, "sampling_frame.csv")
 
 
 
-
-
-
-
-```{r}
-filter(aru, str_detect(fulladdress, "1930 NEW HAMPSHIRE"))
-
-filter(ap, str_detect(fulladdress, "1930 NEW HAMPSHIRE"))
-
-```
 
 ## Pilot survey
 
@@ -218,19 +212,41 @@ rm(pilot_sample)
 
 ### Sample mean
 
-We begin with a derivation of the formula for calculating priority values for $\bar{y}$.
+We begin with a derivation of Exact Optimal Sample Allocation for $\bar{y}$.
 
-Decomposition of $V(\bar{y}_h)$ for stratum $h$:
+Decomposition of $V(\bar{y}_h)$:
 
-< will add later>
+By Wright (12.4), $V(\bar{y}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(\bar{y}_h) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h} \frac{S^2_h}{n_h}$
+
+\hfill
+
+$V(\bar{y}_h) = (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h} \frac{S^2_h}{n_h}$
+
+$V(\bar{y}_h) = (\frac{N_h^2}{N^2}) (1 - \frac{n_h}{N_h}) \frac{S^2_h}{n_h}$
+
+$V(\bar{y}_h) = (\frac{N_h^2S_h^2}{N^2})(\frac{1}{n_h}) - \frac{N^2_h n_h S^2_h}{N^2 N_h n_h}$
+
+$V(\bar{y}_h) = (\frac{N_h^2S_h^2}{N^2})(\frac{1}{n_h}) - \frac{N_h S^2_h}{N^2}$
+
+$V(\bar{y}_h) = (\frac{N_h^2S_h^2}{N^2})(1 - \frac{1}{1 \cdot 2} - \frac{1}{2 \cdot 3} - ...  - \frac{1}{n_h(n_h - 1)}) - \frac{N_h S^2_h}{N^2}$
+
+$V(\bar{y}_h) = \frac{N_h(N_h - 1)S^2_h}{N^2} - \frac{N^2_hS^2_h}{N^2 \cdot 1 \cdot 2} - \frac{N^2_hS^2_h}{N^2 \cdot 2 \cdot 3} - ... - - \frac{N^2_hS^2_h}{N^2 n_h(n_h - 1)}$
+
+\hfill
 
 Decomposition of $V(\bar{y}_{str})$
 
-< will add later>
+$V(\bar{y}_{str}) = \sum_{h = 1}^H \frac{N_h(N_h - 1)S^2_h}{N^2}$
 
-Many of the terms int he calculation of prioirty values will be vary large, so we can express them as 
+$- \frac{N^2_1S^2_1}{N^2 \cdot 1 \cdot 2} - \frac{N^2_1S^2_1}{N^2 \cdot 2 \cdot 3} - ... - - \frac{N^2_1S^2_1}{N^2 n_1(n_1 - 1)}$
 
-$\frac{N_1S_1}{\sqrt{1 \cdot 2}}$, $\frac{N_2S_2}{\sqrt{1 \cdot 2}}$, ..., $\frac{N_HS_H}{\sqrt{1 \cdot 2}}$ (12.36)
+...
+
+$- \frac{N^2_hS^2_h}{N^2 \cdot 1 \cdot 2} - \frac{N^2_hS^2_h}{N^2 \cdot 2 \cdot 3} - ... - - \frac{N^2_hS^2_h}{N^2 n_h(n_h - 1)}$
+
+...
+
+$- \frac{N^2_HS^2_H}{N^2 \cdot 1 \cdot 2} - \frac{N^2_HS^2_H}{N^2 \cdot 2 \cdot 3} - ... - - \frac{N^2_HS^2_H}{N^2 n_H(n_H - 1)}$
 
 \hfill
 
@@ -242,20 +258,18 @@ For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may fi
 
 | | | | |
 |---|---|---|---|
-| $\frac{N_1S_1}{\sqrt{1 \cdot 2}}$ | $\frac{N_1S_1}{\sqrt{2 \cdot 3}}$ | $\frac{N_1S_1}{\sqrt{3 \cdot 4}}$ | ... |
-| $\frac{N_2S_2}{\sqrt{1 \cdot 2}}$ | $\frac{N_2S_2}{\sqrt{2 \cdot 3}}$ | $\frac{N_2S_2}{\sqrt{3 \cdot 4}}$ | ... |
+| $\frac{N^2_1S^2_1}{N^2 \cdot 1 \cdot 2}$ | $\frac{N^2_1S^2_1}{n^2 \cdot 2 \cdot 3}$ | $\frac{N^2_1S^2_1}{N^2 \cdot 3 \cdot 4}$ | ... |
+| $\frac{N^2_2S^2_2}{N^2 \cdot 1 \cdot 2}$ | $\frac{N^2_2S^2_2}{N^2 \cdot 2 \cdot 3}$ | $\frac{N^2_2S^2_2}{N^2 \cdot 3 \cdot 4}$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
-| $\frac{N_HS_H}{\sqrt{1 \cdot 2}}$ | $\frac{N_HS_H}{\sqrt{2 \cdot 3}}$ | $\frac{N_HS_H}{\sqrt{3 \cdot 4}}$ | ... |
+| $\frac{N^2_HS^2_H}{N^2 \cdot 1 \cdot 2}$ | $\frac{N^2_HS^2_H}{N^2 \cdot 2 \cdot 3}$ | $\frac{N^2_HS^2_H}{N^2 \cdot 3 \cdot 4}$ | ... |
 
-3) Since the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\bar{y}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \frac{1}{N^2} \sum_{h = 1}^H ((N^2_h - N_h) S^2_h)$
+3) Since the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\bar{y}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \sum_{h = 1}^H \frac{N_h(N_h - 1)S^2_h}{N^2}$
 
 4) Pick value (1) from the table and increase the associated stratum's sample size by 1, o that the updated allocation is $(n_{12}, n_{22}, ..., n_{H2})$, where exactly one of the $n_{h2}$'s is equal to 2 and the rest are equal to 1. Then, compute $V(\bar{y}_{str}|n_{12}, ..., n_{H2} = V(\bar{y}_{str}|n_{11}, ..., n_{H1}) - \frac{1}{N^2}$ where "(1)" represents the largest value from the table. If $V(\bar{y}_{str}|N_{12}, ..., n_{H2} \leq V_0$, then stop with $n_1 = n_{12}, ..., N_H = N_{H2}$. Otherwise, go to step 5. 
 
-5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\bar{y}_{str}|n_{13}, ..., n_{H3}) = V(\bar{y}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\bar{y}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\bar{y}_str|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
-
-To find an optimal allocation for $V(\hat{p}_{str})$, proceed in the same manner as above, but with $V(\hat{p}_{str}|n_{11} = 1) = (\frac{1}{N^2}\sum_{h = 1}^H(N^2_hp_h(1-p_h))$. Instead of using a pilot survey, we use $\hat{p} = 0.5$ to get the theoretical maximum for a proportion. 
+5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\bar{y}_{str}|n_{13}, ..., n_{H3}) = V(\bar{y}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\bar{y}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\bar{y}_str|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj}$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
 
 \hfill
 
@@ -307,7 +321,7 @@ Step 3: $\hat{V}(\bar{y}|1, 1, 1, 1) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_
 # Let the initial allocation be (n_11, n_21, n_31, n_41) = (1, 1, 1, 1) 
 # (3) and (6)
 starting_variance <- strata %>%
-  mutate(strata_variance = (Nh / N) ^ 2 * ((Nh - 1) / Nh) * (s_squared_h / 1)) 
+  mutate(strata_variance = Nh * (Nh - 1) * s_squared_h / N^2) 
 
 kable(starting_variance)
 
@@ -317,7 +331,6 @@ starting_variance <- starting_variance %>%
 
 starting_variance
 ```
-
 
 Step 3: 
 
@@ -350,7 +363,9 @@ priority_values <- priority_values %>%
   mutate(marginal_variance = starting_variance - agg_priority_value) %>%
   mutate(marginal_sd = sqrt(marginal_variance))
 
-kable(head(select(priority_values, -missing_prop), n = 50), digits = 0)
+kable(head(select(priority_values, -missing_prop, -N), n = 50), digits = 0)
+
+rm(strata, n_strata)
 ```
 
 ### Proportion
@@ -359,9 +374,7 @@ Determining exact optimal allocation for $\hat{p}$ is different than $\bar{y}$. 
 
 \hfill
 
-For $p_h$, $S^2_h = [\frac{N_h}{N_h - 1}] p_h(1 - p_h)$.
-
-$V(\hat{p}_{str}) = \frac{1}{N^2}(\sum_{h = 1}^H N_h(N_h - 1)S_h^2 - \frac{N_1^2S_1^2}{1 \cdot 2} - \cdot\cdot\cdot - \frac{N_H^2S_H^2}{(n_H - 1)n_H})$
+$V(\hat{p}_{str}) = (\sum_{h = 1}^H N_h(N_h - 1)S_h^2 - \frac{N_1^2S_1^2}{1 \cdot 2} - \cdot\cdot\cdot - \frac{N_H^2S_H^2}{(n_H - 1)n_H})$
 
 $V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N_h(N_h - 1) S_h^2}{N^2} - \frac{N_1^2S_1^2}{N^2(1 \cdot 2)} - \cdot\cdot\cdot \frac{N_H^2 S_H^2}{N^2 (n_H - 1)(n_H)}$
 
@@ -390,15 +403,59 @@ For a desired bound on $V_0$ on the sampling variance $V(\hat{p}_{str})$, we may
 
 5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\hat{p}_{str}|n_{13}, ..., n_{H3}) = V(\hat{p}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\hat{p}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\hat{p}_{str}|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
 
+```{r}
+# 
+strata <- sampling_frame %>% 
+  count(stratum = quadrant) %>% 
+  rename(Nh = n) %>%
+  mutate(N =sum(Nh),
+         s_squared_h = 0.5 * (1 - 0.5))
+  
+kable(strata)
+```
+
+```{r proportion-starting-allocation}
+# Let the initial allocation be (n_11, n_21, n_31, n_41) = (1, 1, 1, 1) 
+# (3) and (6)
+starting_variance <- strata %>%
+  mutate(strata_variance = (Nh / N) ^ 2 * ((Nh - 1) / Nh) * (s_squared_h / 1)) 
+
+kable(starting_variance)
+
+starting_variance <- starting_variance %>%
+  summarize(V = sum(strata_variance)) %>%
+  pull()
+
+starting_variance
+```
+
+```{r}
+# create a table of priority values
+# (4) and (5)
+
+n_strata <-tibble(n = c(1:500, 1:500, 1:500, 1:500),
+                  stratum = c(rep("NE", 500), rep("NW", 500), rep("SE", 500), rep("SW", 500))) %>% 
+  left_join(strata, by = "stratum")
+
+# step 2
+priority_values <- n_strata %>%
+  group_by(stratum) %>%
+  mutate(priority_value = (0.25 * Nh * (Nh - 1)) / (N ^ 2 * n * lag(n))) %>%
+  ungroup() %>%
+  arrange(desc(priority_value))
+
+kable(head(priority_values, n = 10))
+```
 
 
+```{r}
+# (7)
+priority_values <- priority_values %>%
+  mutate(agg_priority_value = cumsum(priority_value)) %>%
+  mutate(marginal_variance = starting_variance - agg_priority_value) %>%
+  mutate(marginal_sd = sqrt(marginal_variance))
 
+kable(head(select(priority_values, -N), n = 50), align = "l")
 
-
-
-
-
-
-
-
-
+rm(pilot_sample, strata, n_strata)
+```
