@@ -207,6 +207,39 @@ write_csv(pilot_sample, "data/pilot_sample.csv")
 rm(pilot_sample)
 ```
 
+```{r}
+# load the completed pilot survey and clean the values
+pilot_sample <- read_csv("data/pilot_sample_completed.csv") %>%
+  mutate(land_value = ifelse(!is.na(rf_land_value), 
+                             rf_land_value, 
+                             land_value),
+         improvement_value = ifelse(!is.na(rf_improvement_value), 
+                                    rf_improvement_value, 
+                                    improvement_value)) %>%
+  mutate(property_value = land_value + improvement_value) %>%
+  mutate(property_value = ifelse(unittype == "RENTAL" & 
+                                   active_res_occupancy_count > 4 &
+                                   property_value > 2000000,
+                                 property_value / active_res_occupancy_count,
+                                 property_value
+                                 ))
+```
+
+```{r pilot-summary-stats}
+pilot_sample %>%
+  summarize(mean = mean(property_value, na.rm = TRUE),
+            s_squared_h = var(property_value, na.rm = TRUE), 
+            missing_prop = mean(is.na(property_value))) %>%
+  kable(caption = "Pilot survey summary statistics")  
+
+pilot_sample %>%
+  group_by(quadrant) %>%
+  summarize(mean = mean(property_value, na.rm = TRUE),
+            s_squared_h = var(property_value, na.rm = TRUE), 
+            missing_prop = mean(is.na(property_value))) %>%
+  kable(caption = "Pilot survey summary statistics by quadrant")
+```
+
 ## Picking stratum sizes
 
 ### Condition 1: Sample mean
@@ -271,24 +304,6 @@ For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may fi
 5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\bar{y}_{str}|n_{13}, ..., n_{H3}) = V(\bar{y}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\bar{y}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\bar{y}_str|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj}$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
 
 \hfill
-
-```{r}
-# load the completed pilot survey and clean the values
-pilot_sample <- read_csv("data/pilot_sample_completed.csv") %>%
-  mutate(land_value = ifelse(!is.na(rf_land_value), 
-                             rf_land_value, 
-                             land_value),
-         improvement_value = ifelse(!is.na(rf_improvement_value), 
-                                    rf_improvement_value, 
-                                    improvement_value)) %>%
-  mutate(property_value = land_value + improvement_value) %>%
-  mutate(property_value = ifelse(unittype == "RENTAL" & 
-                                   active_res_occupancy_count > 4 &
-                                   property_value > 2000000,
-                                 property_value / active_res_occupancy_count,
-                                 property_value
-                                 ))
-```
 
 ```{r}
 # find Nh and s2 for each strata
