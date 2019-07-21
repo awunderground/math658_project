@@ -22,14 +22,18 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 })
 ```
 
-```{r r-setup}
-library(tidyverse)
-library(knitr)
-```
+# Zoning out: an analysis of zoning and property values in Washington, D.C.
+
+### Brian Bontempo, Derrick Lee, and Aaron R. Williams
 
 ## Sampling Frame
 
 ### Download the data
+
+```{r r-setup}
+library(tidyverse)
+library(knitr)
+```
 
 ```{r download-data}
 # file path to csv with addresses
@@ -82,7 +86,7 @@ aru <- aru %>%
   filter(status != "RETIRE")
 ```
 
-### Adress Points
+### Address Points
 
 ```{r load-ap}
 # load the data and convert the variable names to lower case
@@ -169,7 +173,7 @@ rm(aru)
 
 ### Combination
 
-Next, we need to drop addresses in the Address Points dataset that exist in the Address Residential Units dataset so we don't overcount addresses in multi-dwelling units. 
+Next, we need to drop addresses in the Address Points dataset that exist in the Address Residential Units dataset so we don't over count addresses in multi-dwelling units. 
 
 ```{r}
 ap <- ap %>%
@@ -189,11 +193,6 @@ rm(ap, aru_expanded)
 write_csv(sampling_frame, "sampling_frame.csv")
 ```
 
-
-
-
-
-
 ## Pilot survey
 
 ```{r write-pilot-survey}
@@ -210,7 +209,7 @@ rm(pilot_sample)
 
 ## Picking stratum sizes
 
-### Sample mean
+### Condition 1: Sample mean
 
 We begin with a derivation of Exact Optimal Sample Allocation for $\bar{y}$.
 
@@ -250,7 +249,7 @@ $- \frac{N^2_HS^2_H}{N^2 \cdot 1 \cdot 2} - \frac{N^2_HS^2_H}{N^2 \cdot 2 \cdot 
 
 \hfill
 
-For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may find an optimal allocation using the followng algorithm:
+For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may find an optimal allocation using the following algorithm:
 
 1) Assign, for each stratum, 1 unit to be selected for the sample. 
 
@@ -334,7 +333,7 @@ starting_variance
 
 Step 3: 
 
-Prioirty value = $\frac{N_1^2 \cdot s_1^2}{N_1^2 \cdot n_h(n_h - 1)}$
+Priority value = $\frac{N_1^2 \cdot s_1^2}{N_1^2 \cdot n_h(n_h - 1)}$
 
 ```{r nean-prioirty-values}
 # create a table of priority values
@@ -368,7 +367,7 @@ kable(head(select(priority_values, -missing_prop, -N), n = 100), digits = 0)
 rm(n_strata)
 ```
 
-### Sample mean within strata
+### Condition 2: Sample means within strata
 
 We are interested in comparing $\bar{y}_{h}$ from the four different quadrants. 
 
@@ -392,7 +391,7 @@ condition2 %>%
 rm(strata)
 ```
 
-### Proportion
+### Condition 3: Sample proportion
 
 We begin with a derivation of Exact Optimal Sample Allocation for $\hat{p}$.
 
@@ -516,7 +515,7 @@ kable(head(select(priority_values, -N), n = 100), align = "l")
 rm(pilot_sample, n_strata)
 ```
 
-### Sample proportion within strata
+### Condition 4: Sample proportion within strata
 
 We are interested in comparing $\hat{p}_{h}$ from the four different quadrants. 
 
