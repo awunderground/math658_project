@@ -370,15 +370,44 @@ rm(strata, n_strata)
 
 ### Proportion
 
-Determining exact optimal allocation for $\hat{p}$ is different than $\bar{y}$. We begin with a derivation of the formula for calculating priority values for $\hat{p}$.
+We begin with a derivation of Exact Optimal Sample Allocation for $\hat{p}$.
+
+Decomposition of $V(\hat{p}_{str})$
+
+By Wright (12.14), $V(\hat{p}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(\hat{p}_h) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h - 1} \frac{\hat{p}(1 - \hat{p})}{n_h}$
+
+$V(\hat{p}_h) = (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h - 1} \frac{\hat{p}(1 - \hat{p})}{n_h}$
+
+$V(\hat{p}_h) = \frac{N^2_h}{N^2} \frac{N_h}{N_h - 1} \frac{\hat{p}(1 - \hat{p})}{n_h} - \frac{N^2_h}{N^2} \frac{n_h}{N_h - 1}\frac{\hat{p}(1 - \hat{p})}{n_h}$
+
+$V(\hat{p}_h) = \frac{N^2_h}{N^2} \frac{N_h}{N_h - 1} \frac{\hat{p}(1 - \hat{p})}{n_h} - \frac{N^2_h}{N^2} \frac{n_h}{N_h - 1}\frac{\hat{p}(1 - \hat{p})}{n_h}$
+
+$V(\hat{p}_h) = \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)} \frac{1}{n_h} - \frac{N^2_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)}$
+
+$V(\hat{p}_h) = \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)} (1 - \frac{1}{1 \cdot 2} - \frac{1}{2 \cdot 3} - \cdot\cdot\cdot  - \frac{1}{n_h(n_h - 1)}) - \frac{N^2_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)}$
+
+$V(\hat{p}_h) = \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1)} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot n_h(n_h - 1)} - \frac{N^2_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)}$
+
+$V(\hat{p}_h) = \frac{(N^3_h - N^2_h) \hat{p}(1 - \hat{p})}{N^2(N_h - 1)} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot n_h(n_h - 1)}$
+
+$V(\hat{p}_h) = \frac{N^2_h (N_h - 1) \hat{p}(1 - \hat{p})}{N^2(N_h - 1)} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot n_h(n_h - 1)}$
 
 \hfill
 
-$V(\hat{p}_{str}) = (\sum_{h = 1}^H N_h(N_h - 1)S_h^2 - \frac{N_1^2S_1^2}{1 \cdot 2} - \cdot\cdot\cdot - \frac{N_H^2S_H^2}{(n_H - 1)n_H})$
+Decomposition of $V(\hat{p}_{str})$
 
-$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N_h(N_h - 1) S_h^2}{N^2} - \frac{N_1^2S_1^2}{N^2(1 \cdot 2)} - \cdot\cdot\cdot \frac{N_H^2 S_H^2}{N^2 (n_H - 1)(n_H)}$
+$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h (N_h - 1) \hat{p}(1 - \hat{p})}{N^2(N_h - 1)}$
 
-$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N_h(N_h - 1) S_h^2}{N^2} - \frac{N_1^3 p_1(1 - p_1)}{N^2(1 \cdot 2)} - \cdot\cdot\cdot \frac{N_H^3 p_H(1 - p_H)}{N^2 (n_H - 1)(n_H)}$
+
+$- \frac{N^3_1 \hat{p}(1 - \hat{p})}{N^2(N_1 - 1) \cdot 1 \cdot 2} - \frac{N^3_1 \hat{p}(1 - \hat{p})}{N^2(N_1 - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_1 \hat{p}(1 - \hat{p})}{N^2(N_1 - 1) n_h(n_h - 1)}$
+
+...
+
+$- \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) n_h (n_h - 1)}$
+
+...
+
+$- \frac{N^3_H \hat{p}(1 - \hat{p})}{N^2(N_H - 1) \cdot 1 \cdot 2} - \frac{N^3_H \hat{p}(1 - \hat{p})}{N^2(N_H - 1) \cdot 3 \cdot 3} - ... - \frac{N^3_H \hat{p}(1 - \hat{p})}{N^2(N_H - 1) n_h (n_h - 1)}$
 
 \hfill
 
@@ -390,12 +419,12 @@ For a desired bound on $V_0$ on the sampling variance $V(\hat{p}_{str})$, we may
 
 | | | | |
 |---|---|---|---|
-| $\frac{\frac{1}{4}N_1^3}{N^2 \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_1^3}{N^2 \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_1^3}{N^2 \cdot 3 \cdot 4}$ | ... |
-| $\frac{\frac{1}{4}N_2^3}{N^2 \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_2^3}{N^2 \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_2^3}{N^2 \cdot 3 \cdot 4}$ | ... |
+| $\frac{\frac{1}{4}N_1^3}{N^2 (N_1 - 1) \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_1^3}{N^2 (N_1 - 1) \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_1^3}{N^2 (N_1 - 1) \cdot 3 \cdot 4}$ | ... |
+| $\frac{\frac{1}{4}N_2^3}{N^2 (N_2 - 1) \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_2^3}{N^2 (N_2 - 1) \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_2^3}{N^2 (N_2 - 1) \cdot 3 \cdot 4}$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
 | $\cdot$ | $\cdot$ | $\cdot$ | ... |
-| $\frac{\frac{1}{4}N_H^3}{N^2 \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_H^3}{N^2 \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_H^3}{N^2 \cdot 3 \cdot 4}$ | ... |
+| $\frac{\frac{1}{4}N_H^3}{N^2 (N_H - 1) \cdot 1 \cdot 2}$ | $\frac{\frac{1}{4}N_H^3}{N^2 (N_H - 1) \cdot 2 \cdot 3}$ | $\frac{\frac{1}{4}N_H^3}{N^2 (N_H - 1) \cdot 3 \cdot 4}$ | ... |
 
 3) Since the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\hat{p}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \frac{1}{N^2} \sum_{h = 1}^H ((N^2_h - N_h) S^2_h)$
 
