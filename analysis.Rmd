@@ -363,9 +363,33 @@ priority_values <- priority_values %>%
   mutate(marginal_variance = starting_variance - agg_priority_value) %>%
   mutate(marginal_sd = sqrt(marginal_variance))
 
-kable(head(select(priority_values, -missing_prop, -N), n = 50), digits = 0)
+kable(head(select(priority_values, -missing_prop, -N), n = 100), digits = 0)
 
-rm(strata, n_strata)
+rm(n_strata)
+```
+
+### Sample mean within strata
+
+We are interested in comparing $\bar{y}_{h}$ from the four different quadrants. 
+
+$n = \frac{N\sigma^2}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + \sigma^2}$
+
+We can use $s^2$ from our pilot survey as an unbiased estimate for $\sigma^2$. 
+
+$n = \frac{Ns^2}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + s^2}$
+
+We want $50,000 precision at a 90% confidence level for the mean of property value in each strata.  
+
+```{r}
+condition2 <- strata %>%
+  mutate(n = (N * s_squared_h) / ((N - 1) * (50000 ^ 2 / qnorm(0.95)) + s_squared_h)) 
+
+condition2 %>%
+  kable()
+```
+
+```{r include = FALSE}
+rm(strata)
 ```
 
 ### Proportion
@@ -374,40 +398,40 @@ We begin with a derivation of Exact Optimal Sample Allocation for $\hat{p}$.
 
 Decomposition of $V(\hat{p}_{str})$
 
-By Wright (12.14), $V(\hat{p}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(\hat{p}_h) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h - 1} \frac{\hat{p}(1 - \hat{p})}{n_h}$
+By Wright (12.14), $V(\hat{p}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(p_h) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h - 1} \frac{p(1 - p)}{n_h}$
 
-$V(\hat{p}_h) = (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h - 1} \frac{\hat{p}(1 - \hat{p})}{n_h}$
+$V(\hat{p}_h) = (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h - 1} \frac{p(1 - p)}{n_h}$
 
-$V(\hat{p}_h) = \frac{N^2_h}{N^2} \frac{N_h}{N_h - 1} \frac{\hat{p}(1 - \hat{p})}{n_h} - \frac{N^2_h}{N^2} \frac{n_h}{N_h - 1}\frac{\hat{p}(1 - \hat{p})}{n_h}$
+$V(\hat{p}_h) = \frac{N^2_h}{N^2} \frac{N_h}{N_h - 1} \frac{p(1 - p)}{n_h} - \frac{N^2_h}{N^2} \frac{n_h}{N_h - 1}\frac{p(1 - p)}{n_h}$
 
-$V(\hat{p}_h) = \frac{N^2_h}{N^2} \frac{N_h}{N_h - 1} \frac{\hat{p}(1 - \hat{p})}{n_h} - \frac{N^2_h}{N^2} \frac{n_h}{N_h - 1}\frac{\hat{p}(1 - \hat{p})}{n_h}$
+$V(\hat{p}_h) = \frac{N^2_h}{N^2} \frac{N_h}{N_h - 1} \frac{p(1 - p)}{n_h} - \frac{N^2_h}{N^2} \frac{n_h}{N_h - 1}\frac{p(1 - p)}{n_h}$
 
-$V(\hat{p}_h) = \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)} \frac{1}{n_h} - \frac{N^2_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)}$
+$V(\hat{p}_h) = \frac{N^3_h p(1 - p)}{N^2 (N_h - 1)} \frac{1}{n_h} - \frac{N^2_h p(1 - p)}{N^2 (N_h - 1)}$
 
-$V(\hat{p}_h) = \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)} (1 - \frac{1}{1 \cdot 2} - \frac{1}{2 \cdot 3} - \cdot\cdot\cdot  - \frac{1}{n_h(n_h - 1)}) - \frac{N^2_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)}$
+$V(\hat{p}_h) = \frac{N^3_h p(1 - p)}{N^2 (N_h - 1)} (1 - \frac{1}{1 \cdot 2} - \frac{1}{2 \cdot 3} - \cdot\cdot\cdot  - \frac{1}{n_h(n_h - 1)}) - \frac{N^2_h p(1 - p)}{N^2 (N_h - 1)}$
 
-$V(\hat{p}_h) = \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1)} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot n_h(n_h - 1)} - \frac{N^2_h \hat{p}(1 - \hat{p})}{N^2 (N_h - 1)}$
+$V(\hat{p}_h) = \frac{N^3_h p(1 - p)}{N^2(N_h - 1)} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot n_h(n_h - 1)} - \frac{N^2_h p(1 - p)}{N^2 (N_h - 1)}$
 
-$V(\hat{p}_h) = \frac{(N^3_h - N^2_h) \hat{p}(1 - \hat{p})}{N^2(N_h - 1)} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot n_h(n_h - 1)}$
+$V(\hat{p}_h) = \frac{(N^3_h - N^2_h) p(1 - p)}{N^2(N_h - 1)} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot n_h(n_h - 1)}$
 
-$V(\hat{p}_h) = \frac{N^2_h (N_h - 1) \hat{p}(1 - \hat{p})}{N^2(N_h - 1)} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot n_h(n_h - 1)}$
+$V(\hat{p}_h) = \frac{N^2_h (N_h - 1) p(1 - p)}{N^2(N_h - 1)} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot n_h(n_h - 1)}$
 
 \hfill
 
 Decomposition of $V(\hat{p}_{str})$
 
-$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h (N_h - 1) \hat{p}(1 - \hat{p})}{N^2(N_h - 1)}$
+$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h (N_h - 1) p(1 - p)}{N^2(N_h - 1)}$
 
 
-$- \frac{N^3_1 \hat{p}(1 - \hat{p})}{N^2(N_1 - 1) \cdot 1 \cdot 2} - \frac{N^3_1 \hat{p}(1 - \hat{p})}{N^2(N_1 - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_1 \hat{p}(1 - \hat{p})}{N^2(N_1 - 1) n_h(n_h - 1)}$
-
-...
-
-$- \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_h \hat{p}(1 - \hat{p})}{N^2(N_h - 1) n_h (n_h - 1)}$
+$- \frac{N^3_1 p(1 - p)}{N^2(N_1 - 1) \cdot 1 \cdot 2} - \frac{N^3_1 p(1 - p)}{N^2(N_1 - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_1 p(1 - p)}{N^2(N_1 - 1) n_h(n_h - 1)}$
 
 ...
 
-$- \frac{N^3_H \hat{p}(1 - \hat{p})}{N^2(N_H - 1) \cdot 1 \cdot 2} - \frac{N^3_H \hat{p}(1 - \hat{p})}{N^2(N_H - 1) \cdot 3 \cdot 3} - ... - \frac{N^3_H \hat{p}(1 - \hat{p})}{N^2(N_H - 1) n_h (n_h - 1)}$
+$- \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) n_h (n_h - 1)}$
+
+...
+
+$- \frac{N^3_H p(1 - p)}{N^2(N_H - 1) \cdot 1 \cdot 2} - \frac{N^3_H p(1 - p)}{N^2(N_H - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_H p(1 - p)}{N^2(N_H - 1) n_h (n_h - 1)}$
 
 \hfill
 
@@ -463,13 +487,16 @@ starting_variance
 # (4) and (5)
 
 n_strata <-tibble(n = c(1:500, 1:500, 1:500, 1:500),
-                  stratum = c(rep("NE", 500), rep("NW", 500), rep("SE", 500), rep("SW", 500))) %>% 
+                  stratum = c(rep("NE", 500), 
+                              rep("NW", 500), 
+                              rep("SE", 500), 
+                              rep("SW", 500))) %>% 
   left_join(strata, by = "stratum")
 
 # step 2
 priority_values <- n_strata %>%
   group_by(stratum) %>%
-  mutate(priority_value = (0.25 * Nh * (Nh - 1)) / (N ^ 2 * n * lag(n))) %>%
+  mutate(priority_value = (0.25 * Nh ^ 3) / (N ^ 2 * (Nh - 1) * n * lag(n))) %>%
   ungroup() %>%
   arrange(desc(priority_value))
 
@@ -484,7 +511,50 @@ priority_values <- priority_values %>%
   mutate(marginal_variance = starting_variance - agg_priority_value) %>%
   mutate(marginal_sd = sqrt(marginal_variance))
 
-kable(head(select(priority_values, -N), n = 50), align = "l")
+kable(head(select(priority_values, -N), n = 100), align = "l")
 
-rm(pilot_sample, strata, n_strata)
+rm(pilot_sample, n_strata)
 ```
+
+### Sample proportion within strata
+
+We are interested in comparing $\hat{p}_{h}$ from the four different quadrants. 
+
+$n = \frac{N p(1 - p)}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + p(1 - p)}$
+
+We can assume that $p = 0.5$.  
+
+
+$n = \frac{\frac{1}{4}N}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + \frac{1}{4}}$
+
+We want 0.1 precision at a 90% confidence level for the mean of proportion with multi-family zoning in each strata.  
+
+```{r}
+condition4 <- strata %>%
+  mutate(n = (N * 0.25) / ((N - 1) * (0.1 ^ 2 / qnorm(0.95)) + 0.25)) 
+
+condition4 %>%
+  kable()
+```
+
+```{r include = FALSE}
+rm(strata)
+```
+
+## Combining the above conditions
+
+We want to sample at a rate that meets the four different requirements from above 
+
+1. $V_0 > V(\bar{y}_{str})$ for the sample mean
+2. \$50,000 precision at a 90% confidence level for $\bar{y}_h$ in each strata 
+3. $V_0 > V(\hat{p}_h)$ for the sample proportion
+4. 0.1 precision at a 90% confidence level for $\hat{p}$ in each strata
+
+```{r}
+tibble(`2.` = condition2$n,
+       `4.` = condition4$n) %>%
+  kable(caption = "Recommended strata sizes across the four conditions")
+```
+
+
+
