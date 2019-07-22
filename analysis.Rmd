@@ -405,11 +405,11 @@ We can use $s^2$ from our pilot survey as an unbiased estimate for $\sigma^2$.
 
 $n = \frac{Ns^2}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + s^2}$
 
-We want $50,000 precision at a 90% confidence level for the mean of property value in each strata.  
+We want $120,000 precision at a 90% confidence level for the mean of property value in each strata.  
 
 ```{r}
 condition2 <- strata %>%
-  mutate(n = (N * s_squared_h) / ((N - 1) * (100000 ^ 2 / qnorm(0.95) ^ 2) + s_squared_h)) 
+  mutate(n = (Nh * s_squared_h) / ((Nh - 1) * (120000 ^ 2 / qnorm(0.95) ^ 2) + s_squared_h)) 
 
 condition2 %>%
   kable()
@@ -567,7 +567,7 @@ We want 0.1 precision at a 90% confidence level for the mean of proportion with 
 
 ```{r}
 condition4 <- strata %>%
-  mutate(n = (N * 0.25) / ((N - 1) * (0.1 ^ 2 / qnorm(0.95) ^ 2) + 0.25)) 
+  mutate(n = (Nh * 0.25) / ((Nh - 1) * (0.1 ^ 2 / qnorm(0.95) ^ 2) + 0.25)) 
 
 condition4 %>%
   kable()
@@ -596,16 +596,33 @@ tibble(quadrant = condition1$stratum,
 ```
 
 ```{r}
-tibble(quadrant = condition1$stratum,
+nh <- tibble(quadrant = condition1$stratum,
        `1.` = condition1$n,
        `2.` = condition2$n,
        `3.` = condition3$n,
        `4.` = condition4$n) %>%
   gather(key = "key", value = "nh", -quadrant) %>%
   group_by(quadrant) %>%
-  summarize(nh = ceiling(max(nh))) %>%
-  kable(caption = "Maximum recommended strata sizes across the four conditions")
+  summarize(nh = ceiling(max(nh))) 
 
+nh %>%
+  kable(caption = "Maximum recommended strata sizes across the four conditions")
+```
+
+```{r}
+survey <- group_split(sampling_frame, quadrant) %>%
+  map2_df(nh$nh, sample_n)
+
+survey %>%
+  sample_n(10) %>%
+  select(status, fulladdress, res_type) %>%
+  kable()
+
+count(survey, quadrant)
+```
+
+```{r}
+write_csv(survey, "data/survey.csv")
 ```
 
 
