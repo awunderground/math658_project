@@ -350,18 +350,22 @@ Step 3:
 
 Priority value = $\frac{N_1^2 \cdot s_1^2}{N_1^2 \cdot n_h(n_h - 1)}$
 
-```{r nean-prioirty-values}
+```{r mean-prioirty-values}
 # create a table of priority values
 # (4) and (5)
-n_strata <- 
-  tibble(n = c(1:500, 1:500, 1:500, 1:500),
-       stratum = c(rep("NE", 500), rep("NW", 500), rep("SE", 500), rep("SW", 500))) %>%
+n_strata <-
+  tibble(stratum = rep(strata$stratum, strata$Nh)) %>%
+  group_by(stratum) %>%
+  mutate(n = row_number()) %>%
+  ungroup() %>%
   left_join(strata, by = "stratum")
 
 # step 2
 priority_values <- n_strata %>%
   group_by(stratum) %>%
-  mutate(priority_value = (Nh ^ 2 * s_squared_h) / (n * lag(n) * N ^ 2)) %>%
+  # rewritten to avoid integer overflow
+  # mutate(priority_value = (Nh ^ 2 * s_squared_h) / (n * lag(n) * N ^ 2)) %>%
+  mutate(priority_value = (Nh ^ 2 / n) * (s_squared_h / lag(n)) * (1 / N ^ 2)) %>%
   ungroup() %>%
   arrange(desc(priority_value))
 
@@ -382,6 +386,15 @@ kable(head(select(priority_values, -missing_prop, -N), n = 100), digits = 0)
 rm(n_strata)
 ```
 
+```{r}
+condition1 <- priority_values %>%
+  mutate(stratum = factor(stratum)) %>%
+  filter(marginal_variance >= ((0.1 * (mean(pilot_sample$property_value, na.rm = TRUE))) ^ 2))
+
+condition1 <- condition1 %>%
+  count(stratum, .drop = FALSE)
+```
+
 ### Condition 2: Sample means within strata
 
 We are interested in comparing $\bar{y}_{h}$ from the four different quadrants. 
@@ -396,7 +409,7 @@ We want $50,000 precision at a 90% confidence level for the mean of property val
 
 ```{r}
 condition2 <- strata %>%
-  mutate(n = (N * s_squared_h) / ((N - 1) * (50000 ^ 2 / qnorm(0.95)) + s_squared_h)) 
+  mutate(n = (N * s_squared_h) / ((N - 1) * (50000 ^ 2 / qnorm(0.95) ^ 2) + s_squared_h)) 
 
 condition2 %>%
   kable()
@@ -500,11 +513,13 @@ starting_variance
 # create a table of priority values
 # (4) and (5)
 
-n_strata <-tibble(n = c(1:500, 1:500, 1:500, 1:500),
-                  stratum = c(rep("NE", 500), 
-                              rep("NW", 500), 
-                              rep("SE", 500), 
-                              rep("SW", 500))) %>% 
+n_strata <-
+  sampling_frame %>%
+  count(quadrant) 
+
+n_strata <- tibble(stratum = rep(n_strata$quadrant, n_strata$n)) %>%
+  group_by(stratum) %>%
+  mutate(n = row_number()) %>%
   left_join(strata, by = "stratum")
 
 # step 2
@@ -527,7 +542,14 @@ priority_values <- priority_values %>%
 
 kable(head(select(priority_values, -N), n = 100), align = "l")
 
-rm(pilot_sample, n_strata)
+rm(n_strata)
+```
+
+```{r}
+condition3 <- priority_values %>%
+  filter(marginal_variance >= ((0.1 * 0.5) ^ 2))
+
+condition3 <- count(condition3, stratum)
 ```
 
 ### Condition 4: Sample proportion within strata
@@ -545,7 +567,7 @@ We want 0.1 precision at a 90% confidence level for the mean of proportion with 
 
 ```{r}
 condition4 <- strata %>%
-  mutate(n = (N * 0.25) / ((N - 1) * (0.1 ^ 2 / qnorm(0.95)) + 0.25)) 
+  mutate(n = (N * 0.25) / ((N - 1) * (0.1 ^ 2 / qnorm(0.95) ^ 2) + 0.25)) 
 
 condition4 %>%
   kable()
@@ -565,7 +587,9 @@ We want to sample at a rate that meets the four different requirements from abov
 4. 0.1 precision at a 90% confidence level for $\hat{p}$ in each strata
 
 ```{r}
-tibble(`2.` = condition2$n,
+tibble(`1.` = condition1$n,
+       `2.` = condition2$n,
+       `3.` = condition3$n,
        `4.` = condition4$n) %>%
   kable(caption = "Recommended strata sizes across the four conditions")
 ```
