@@ -219,7 +219,7 @@ pilot_sample <- read_csv("data/pilot_sample_completed.csv") %>%
   mutate(property_value = land_value + improvement_value) %>%
   mutate(property_value = ifelse(unittype == "RENTAL" & 
                                    active_res_occupancy_count > 4 &
-                                   property_value > 2000000,
+                                   property_value > 500000,
                                  property_value / active_res_occupancy_count,
                                  property_value
                                  ))
@@ -409,7 +409,7 @@ We want $50,000 precision at a 90% confidence level for the mean of property val
 
 ```{r}
 condition2 <- strata %>%
-  mutate(n = (N * s_squared_h) / ((N - 1) * (50000 ^ 2 / qnorm(0.95) ^ 2) + s_squared_h)) 
+  mutate(n = (N * s_squared_h) / ((N - 1) * (100000 ^ 2 / qnorm(0.95) ^ 2) + s_squared_h)) 
 
 condition2 %>%
   kable()
@@ -587,12 +587,25 @@ We want to sample at a rate that meets the four different requirements from abov
 4. 0.1 precision at a 90% confidence level for $\hat{p}$ in each strata
 
 ```{r}
-tibble(`1.` = condition1$n,
+tibble(quadrant = condition1$stratum,
+       `1.` = condition1$n,
        `2.` = condition2$n,
        `3.` = condition3$n,
        `4.` = condition4$n) %>%
   kable(caption = "Recommended strata sizes across the four conditions")
 ```
 
+```{r}
+tibble(quadrant = condition1$stratum,
+       `1.` = condition1$n,
+       `2.` = condition2$n,
+       `3.` = condition3$n,
+       `4.` = condition4$n) %>%
+  gather(key = "key", value = "nh", -quadrant) %>%
+  group_by(quadrant) %>%
+  summarize(nh = ceiling(max(nh))) %>%
+  kable(caption = "Maximum recommended strata sizes across the four conditions")
+
+```
 
 
