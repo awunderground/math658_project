@@ -498,7 +498,7 @@ kable(strata)
 # Let the initial allocation be (n_11, n_21, n_31, n_41) = (1, 1, 1, 1) 
 # (3) and (6)
 starting_variance <- strata %>%
-  mutate(strata_variance = (Nh / N) ^ 2 * ((Nh - 1) / Nh) * (s_squared_h / 1)) 
+  mutate(strata_variance = (Nh ^ 2 * (Nh - 1) * 0.25) / (N ^ 2 * (Nh - 1))) 
 
 kable(starting_variance)
 
