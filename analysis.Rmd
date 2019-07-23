@@ -287,6 +287,10 @@ states %>%
 
 ## 7. Determination of Sample and Strata Sizes
 
+We are interested in estimating the sample mean of property values for all D.C. residences using stratification, the sample means of property values for all residences in each quadrant of D.C., the sample proportion of residences with different zoning types for all D.C. residences using stratifcation, and the sample proportions of residences with different zoning types in each quadrant of D.C.. All four of these four estimation processes requires allocating a certain number of sample units to each strata and each process has a different optimal allocation. 
+
+For the stratified estimates we will specify a maximum variance, $V_0$, and use Exact Optimal Allocation for $\bar{y}_{str}$ and $\hat{p_{str}}$. For the estimates within each quadrant, we will specify an error, $e$, and calculate an appropriate sample size for simple random sampling and a 90 percent confidence interval. Finally, we will align all four optimal allocations and take the maximum $n_h$ for each quadrant. This won't necessarily result in an optimal allocation for any one of our four estimates but it will ensure that our allocation is adequate for each of our four estimates. 
+
 ### Condition 1: Sample mean
 
 We begin with a derivation of Exact Optimal Sample Allocation for $\bar{y}$.
@@ -426,7 +430,7 @@ priority_values <- priority_values %>%
   mutate(marginal_variance = starting_variance - agg_priority_value) %>%
   mutate(marginal_sd = sqrt(marginal_variance))
 
-kable(head(select(priority_values, -missing_prop, -N), n = 100), digits = 0)
+kable(head(select(priority_values, -missing_prop, -N), n = 10), digits = 0)
 
 rm(n_strata)
 ```
@@ -585,7 +589,7 @@ priority_values <- priority_values %>%
   mutate(marginal_variance = starting_variance - agg_priority_value) %>%
   mutate(marginal_sd = sqrt(marginal_variance))
 
-kable(head(select(priority_values, -N), n = 100), align = "l")
+kable(head(select(priority_values, -N), n = 10), align = "l")
 
 rm(n_strata)
 ```
