@@ -15,6 +15,7 @@ knitr::opts_chunk$set(warning = FALSE)
 knitr::opts_chunk$set(size = "footnotesize")
 knitr::opts_chunk$set(dev = "cairo_pdf")
 
+options(knitr.kable.NA = "")
 options(scipen = 999)
 
 def.chunk.hook <- knitr::knit_hooks$get("chunk")
@@ -61,7 +62,7 @@ To obtain a list of all residential housing units in Washington, DC, we sourced 
 
 The second dataset, Address Point(II), is a comprehensive list of all primary addresses within DC. It includes 147,650 records of Single-Family, Multifamily, and non-residential addresses. Unlike the first dataset, the Address Point dataset has more variables to describe each address, such as ward ID, census block ID, and active residential occupancy counts. However, the dataset does not list the individual units within the Multifamily complexes - but rather just lists street addresses for the complexes. An apartment building that shows up as many addresses in the Address Residential Units dataset only shows up once in this data set. 
 
-To form our Sampling Frame, we merged the two datasets - extracting key data points from each dataset. This required dropping street addresses from the Address Points dataset that appear in Address Residential Units to avoid double counting. We were able to generate a final list of all residential housing units in Washington, DC, comprised of 348,094 Single-family and Multi-family units. The R code in the appendix includes all transformations used to create the final dataset. Both source datasets and the final dataset include quadrant for every obsevration, which proved valuable for stratifcation. 
+To form our Sampling Frame, we merged the two datasets - extracting key data points from each dataset. This required dropping street addresses from the Address Points dataset that appear in Address Residential Units to avoid double counting. We were able to generate a final list of all residential housing units in Washington, DC, comprised of 348,094 single-family and multi-family units. The R code in the appendix includes all transformations used to create the final dataset. Both source datasets and the final dataset include quadrant for every observation, which proved valuable for stratification. 
 
 ```{r r-setup}
 # load necessary packages
@@ -216,7 +217,7 @@ Our primary instruments for measuring and capturing data were the government hou
 - III. DC Tax Service Web Portal 
   - https://www.taxpayerservicecenter.com/RP_Search.jsp?search_type=Assessment
 
-Zone district types were captured with the official DC Zoning Map (I). Once the street number, street name, and quadrant are entered, the website generates the address’s various zoning data, including its Zone district type. Once the type was identified, we recorded the following data points for each residential housing unit in our sample: (1) Street Number, (2) Street Name, (3) Quadrant, (4) Unit Number, (5) Unit Type, (6) Zone Type. Example zone district types are RA-4, which permits medium to high-desnity apartments, and RF-1, which permits development of attached rowhouses on small lots.
+Zone district types were captured with the official DC Zoning Map (I). Once the street number, street name, and quadrant are entered, the website generates the address’s various zoning data, including its Zone district type. Once the type was identified, we recorded the following data points for each residential housing unit in our sample: (1) Street Number, (2) Street Name, (3) Quadrant, (4) Unit Number, (5) Unit Type, (6) Zone Type. Example zone district types are RA-4, which permits medium to high-density apartments, and RF-1, which permits development of attached row houses on small lots.
 
 Additionally, we captured the appraised values (Land and Improvement values) for each unit with Redfin (II) and the DC Tax Service web portal (III). First, with Redfin, we entered the street number, street name, quadrant, and city of each unit to return various property details, from which we obtained the Land and Addition (Improvement) dollar amounts of the unit. If we were not able to acquire the data points through Redfin, we then utilized the DC Tax Service web portal with the same data entry to obtain the Land and Improvement values of the properties. For condominiums and single-family units, we obtained unit-specific appraised values, while for multi-family apartments, we obtained their total building appraised values and adjusted for the number of residents in the building. These two additional data points were then appended to the above six data points for the selected sample units: (7) Land Value, (8) Improvement Value. 
 
@@ -297,7 +298,7 @@ states %>%
 
 ## 7. Determination of Sample and Strata Sizes
 
-We were interested in estimating the sample mean of property values for all DC residences using stratification, the sample means of property values for all residences in each quadrant of DC, the sample proportion of residences in zones that don't restrict multi-family housing for all DC residences using stratifcation, and the sample proportions of residences in zones that don't restrcit multi-family housing. All four of these estimation processes required allocating a certain number of sample units to each stratum and each process has a different optimal allocation. 
+We were interested in estimating the sample mean of property values for all DC residences using stratification, the sample means of property values for all residences in each quadrant of DC, the sample proportion of residences in zones that don't restrict multi-family housing for all DC residences using stratification, and the sample proportions of residences in zones that don't restrict multi-family housing. All four of these estimation processes required allocating a certain number of sample units to each stratum and each process has a different optimal allocation. 
 
 For the stratified estimates we specified a maximum variance, $V_0$, and used Exact Optimal Allocation for $\bar{y}_{str}$ and $\hat{p_{str}}$. For the estimates within each quadrant, we specified an error, $e$, and calculated an appropriate sample size for simple random sampling and a 90 percent confidence interval. Finally, we aligned all four optimal allocations and took the maximum $n_h$ for each quadrant. This didn't necessarily result in an optimal allocation for any one of our four estimates but it ensured that our allocation was adequate for each of our four estimates. 
 
@@ -366,7 +367,7 @@ For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, one can f
 
 First we estimate $s^2$ and the missing proportion for each stratum.
 
-```{r}
+```{r mean-variance-estimation}
 # find Nh and s2 for each strata
 # (1) and (2)
 s_squared_h <- pilot_sample %>%
@@ -384,9 +385,6 @@ strata <- left_join(s_squared_h, Nh, by = "stratum") %>%
   mutate(N = sum(Nh))
 
 rm(s_squared_h, Nh)
-
-kable(strata,
-      col.names = c("Stratum", "$s^2$", "Missing Prop.", "$N_h$", "N"))
 ```
 
 Next we estimated the variance with an initial allocation of (1, 1, 1, 1) in each stratum. 
@@ -398,6 +396,7 @@ starting_variance <- strata %>%
   mutate(strata_variance = Nh * (Nh - 1) * s_squared_h / N^2) 
 
 kable(starting_variance,
+      caption = "Results of initial allocation of (1, 1, 1, 1)",
       col.names = c("Stratum", "$s^2$", "Missing Prop.", "$N_h$", "N", "Initial variance"))
 
 starting_variance <- starting_variance %>%
@@ -406,9 +405,11 @@ starting_variance <- starting_variance %>%
 
 ```
 
-This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional prioirty value from the starting variance to get the variance of the estimator with the given allocation.
+This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional priority value from the starting variance to get the variance of the estimator with the given allocation. Interestingly, the top values were all in NW because of the size and variability of NW.
 
-```{r mean-prioirty-values}
+We chose a $V_0$ of 0.1 times the mean from the pilot survey squared and then selected the largest priority values that achieved $V_0$ the quickest. 
+
+```{r mean-priority-values}
 # create a table of priority values
 # (4) and (5)
 n_strata <-
@@ -426,22 +427,19 @@ priority_values <- n_strata %>%
   mutate(priority_value = (Nh ^ 2 / n) * (s_squared_h / lag(n)) * (1 / N ^ 2)) %>%
   ungroup() %>%
   arrange(desc(priority_value))
-```
 
-```{r}
 # (7)
 priority_values <- priority_values %>%
   mutate(agg_priority_value = cumsum(priority_value)) %>%
   mutate(variance = starting_variance - agg_priority_value)
 
-kable(head(select(priority_values, -missing_prop, -N), n = 10), digits = 0)
+kable(head(select(priority_values, -missing_prop, -agg_priority_value, -N), n = 10), 
+      caption = "Priority values for $\\bar{y}_{str}$",
+      col.names = c("Stratum", "n", "$s^2_h$", "$N_h$", "Priority value", "$\\hat{V}(\\bar{y}_h)$"),
+      digits = 0)
 
 rm(n_strata)
-```
-
-We chose a $V_0$ of 0.1 times the mean from the pilot survey squared and then selected the largest priority values that achieved $V_0$ the quickest. 
-
-```{r}
+ 
 condition1 <- priority_values %>%
   mutate(stratum = factor(stratum)) %>%
   filter(variance >= ((0.1 * (mean(pilot_sample$property_value, na.rm = TRUE))) ^ 2))
@@ -452,7 +450,7 @@ condition1 <- condition1 %>%
 
 ### Variance of $\bar{y}_{str}$ with Exact Optimal Allocation at the $ith$ unit
 
-```{r fig.height = 3}
+```{r mean-priority-values-plot, fig.height = 3}
 priority_values %>%
   mutate(x = row_number()) %>%
   ggplot(aes(x = x, y = variance)) +
@@ -479,15 +477,14 @@ $n = \frac{Ns^2}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + s^2}$
 
 We wanted $120,000 precision at a 90% confidence level for the mean of property value in each strata.  
 
-```{r}
+```{r mean-nh}
 condition2 <- strata %>%
   mutate(n = (Nh * s_squared_h) / ((Nh - 1) * (120000 ^ 2 / qnorm(0.95) ^ 2) + s_squared_h)) 
 
 condition2 %>%
-  kable()
-```
-
-```{r include = FALSE}
+  kable(caption = "Calculated sample sizes for $\\hat{y}_h$ in each stratum",
+        col.names = c("Stratum", "$s^2_h$", "Missing proportion", "$N_h$", "N", "n_h"))
+ 
 rm(strata)
 ```
 
@@ -501,17 +498,15 @@ By noting that $\hat{p}_h$ is a special case of $\bar{y}_h$, and that when $y_i 
 
 $V(\hat{p}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(\hat{p}_h)$
 
-$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h}{N^2} (\frac{(N_hh - 1)S^2_h}{N_h} - \frac{S^2_h}{1 \cdot 2} - \frac{S^2_h}{2 \cdot 3} - ... - \frac{S^2_h}{n_h(n_h - 1)})$
+$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h}{N^2} (\frac{(N_h - 1)S^2_h}{N_h} - \frac{S^2_h}{1 \cdot 2} - \frac{S^2_h}{2 \cdot 3} - ... - \frac{S^2_h}{n_h(n_h - 1)})$
 
 $V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h}{N^2} (\frac{(N_h - 1)}{N_h}\frac{N_h p_h(1- p_h)}{(N_h - 1)} - \frac{N_hp_h(1 - p_h)}{(N_h - 1)(1 \cdot 2)} - \frac{N_hp_h(1 - p_h)}{(N_h - 1)(2 \cdot 3)} - ... - \frac{N_hp_h(1 - p_h)}{(N_h - 1)(n_h)(n_h - 1)})$
 
 \hfill
 
-Decomposition of $V(\hat{p}_{str})$
-
 $V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_hp_h(1 - p_h)}{N^2}$
 
-$- \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) \cdot 1 \cdot 2} - \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) n_h(n_h - 1)}$
+$- \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) \cdot 1 \cdot 2} - \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) n_1(n_1 - 1)}$
 
 ...
 
@@ -519,7 +514,7 @@ $- \frac{N^3_h p_h(1 - p_h)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p_h(1 -
 
 ...
 
-$- \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) \cdot 1 \cdot 2} - \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) n_h (n_h - 1)}$
+$- \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) \cdot 1 \cdot 2} - \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) n_H (n_H - 1)}$
 
 \hfill
 
@@ -544,16 +539,13 @@ For a desired bound on $V_0$ on the sampling variance $V(\hat{p}_{str})$, one ma
 
 5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\hat{p}_{str}|n_{13}, ..., n_{H3}) = V(\hat{p}_{str}|n_{12}, ..., n_{H2}) - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\hat{p}_{str}|n_{13}, ..., N_H \leq V_0$, then stop with $n_1 = n_{13}, ..., n_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\hat{p}_{str}|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
 
-```{r}
+```{r proportion-strata-s2}
 # 
 strata <- sampling_frame %>% 
   count(stratum = quadrant) %>% 
   rename(Nh = n) %>%
   mutate(N =sum(Nh),
          s_squared_h = 0.5 * (1 - 0.5))
-  
-kable(strata,
-      col.names = c("Stratum", "$N_h$", "N", "$s^2_h"))
 ```
 
 Next we estimated the variance with an initial allocation of (1, 1, 1, 1) in each stratum. 
@@ -565,6 +557,7 @@ starting_variance <- strata %>%
   mutate(strata_variance = (Nh ^ 2 * (Nh - 1) * 0.25) / (N ^ 2 * (Nh - 1))) 
 
 kable(starting_variance,
+      caption = "Results of initial allocation of (1, 1, 1, 1)",
       col.names = c("Stratum", "$N_h$", "N", "$s^2_h", "Initial variance"))
 
 starting_variance <- starting_variance %>%
@@ -572,9 +565,9 @@ starting_variance <- starting_variance %>%
   pull()
 ```
 
-This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional prioirty value from the starting variance to get the variance of the estimator conditional on the given allocation.
+This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional priority value from the starting variance to get the variance of the estimator conditional on the given allocation.
 
-```{r}
+```{r proportion-priority-values}
 # create a table of priority values
 # (4) and (5)
 n_strata <-
@@ -601,7 +594,10 @@ priority_values <- priority_values %>%
   mutate(agg_priority_value = cumsum(priority_value)) %>%
   mutate(variance = starting_variance - agg_priority_value)
 
-kable(head(select(priority_values, -N), n = 10), align = "l")
+kable(head(select(priority_values, -agg_priority_value, -N), n = 10), 
+      caption = "Priority values for $\\hat{p}_{str}$",
+      col.names =c("Stratum", "n", "$s^2_h$", "$N_h$", "Priority value", "$\\hat{V}(\\hat{p}_h)$"),
+      align = "l")
 
 rm(n_strata)
 ```
@@ -610,7 +606,7 @@ We chose a $V_0$ of 0.1 times the mean from the pilot survey squared and then se
 
 ### Variance of $\hat{p}_{str}$ with Exact Optimal Allocation at the $ith$ unit
 
-```{r fig.height = 3}
+```{r proportion-priority-value-plot, fig.height = 3}
 priority_values %>%
   mutate(x = row_number()) %>%
   ggplot(aes(x = x, y = variance)) +
@@ -625,7 +621,7 @@ priority_values %>%
   theme(plot.margin = margin(r = 20))
 ```
 
-```{r}
+```{r proportion-nh}
 condition3 <- priority_values %>%
   filter(variance >= ((0.1 * 0.5) ^ 2))
 
@@ -650,7 +646,8 @@ condition4 <- strata %>%
   mutate(n = (Nh * 0.25) / ((Nh - 1) * (0.1 ^ 2 / qnorm(0.95) ^ 2) + 0.25)) 
 
 condition4 %>%
-  kable()
+  kable(caption = "Calculated sample sizes for $\\hat{p}_h$ in each stratum",
+        col.names = c("Stratum", "$s^2_h$", "$N_h$", "N", "n_h"))
 ```
 
 ```{r include = FALSE}
@@ -673,6 +670,7 @@ tibble(quadrant = condition1$stratum,
        `3.` = condition3$n,
        `4.` = condition4$n) %>%
   kable(caption = "Recommended strata sizes across the four conditions",
+        col.names = c("Quadrant", "Condition 1", "Condition 2", "Condition 3", "Condition 4"),
         digits = 2)
 ```
 
@@ -687,10 +685,13 @@ nh <- tibble(quadrant = condition1$stratum,
   summarize(nh = ceiling(max(nh))) 
 
 nh %>%
-  kable(caption = "Maximum recommended strata sizes across the four conditions")
+  kable(caption = "Maximum recommended strata sizes across the four conditions",
+        col.names = c("Quadrant", "$n_h$"))
 ```
 
 ## 8. Sampling Plan
+
+Using the calculated values for $n_h$ from above, we sampled $n_h$ observations from each quadrant in Washington, DC. R does this by assigning a random number between zero and one to each observation and then selecting the observations with random numbers less than the desired proportion of values for each stratum. R can sample by proportion or integer. 
 
 ```{r}
 survey <- group_split(sampling_frame, quadrant) %>%
@@ -698,8 +699,9 @@ survey <- group_split(sampling_frame, quadrant) %>%
 
 survey %>%
   sample_n(10) %>%
-  select(status, fulladdress, res_type) %>%
-  kable()
+  select(fulladdress, unitnum, res_type) %>%
+  kable(caption = "First 10 addresses sampled",
+        col.names = c("Address", "Unit number", "Residence type"))
 ```
 
 ```{r}
@@ -747,19 +749,12 @@ final_survey <- left_join(final_survey, Nh, by = "quadrant") %>%
 
 final_survey <- left_join(final_survey, represented_zones, by = "zoning")
 
-
 strat_design <- svydesign(id = ~1, data = final_survey, strata = ~quadrant, fpc = ~fpc)
 ```
 
-## Sample statistics
-
-
-
-
-
 ## $\mathbf{\bar{y}_{str}}$
 
-The first parameter we estimated was the stratifed sample mean of the appraised property value in Washington DC. We also estimated a 95% confidence interval for the parameter. 
+The first parameter we estimated was the stratified sample mean of the appraised property value in Washington DC. We also estimated a 95% confidence interval for the parameter. 
 
 $\bar{y}_{str} = \sum_{h = 1}^H \frac{N_h}{N} \bar{y}_h$
 
@@ -806,12 +801,14 @@ svyby(~property_value,            # variable to estimate
       na.rm = TRUE,
       vartype = "ci"
       ) %>%
-  kable(digits = 0)
+  kable(digits = 0,
+        caption = "Mean appraised property value and 95% confidence interval in each quadrant",
+        col.names = c("Quadrant", "$\\bar{y}_h$", "C.I. Lower", "C.I. Upper"))
 ```
 
 ## $\mathbf{\hat{p}_{str}}$
 
-The third main parameter estimated was the stratifed proportion of addresses with multi-family zoning in Washington DC. We also estimated a 95% confidence interval for the parameter. 
+The third main parameter estimated was the stratified proportion of addresses with multi-family zoning in Washington DC. We also estimated a 95% confidence interval for the parameter. 
 
 $\hat{p}_{str} = \sum_{h = 1}^H \frac{N_h}{N} \hat{p}_h$
 
@@ -829,7 +826,8 @@ tibble(
   Lower = confint(svymean(~multifamily, strat_design))[1],
   Upper = confint(svymean(~multifamily, strat_design))[2]
 ) %>%
-  kable(caption = "",
+  kable(caption = "Proportion of homes in zones that don't restrict multi-family housing and 95% confidence interval",
+        col.names = c("$\\bar{y}_{str}$", "C.I. Lower", "C.I. Upper"), 
         digits = 3)
 ```
 
@@ -859,7 +857,9 @@ svyby(~multifamily,            # variable to estimate
       na.rm = TRUE,
       vartype = "ci"
       ) %>%
-  kable(digits = 3)
+  kable(digits = 3,
+        caption = "Proportion of homes in zones that don't restrict multi-family housing and 95% confidence interval by quadrant",
+        col.names = c("Quadrant", "$\\hat{p}_h$", "C.I. Lower", "C.I. Upper"))
 ```
 
 ## 10. Discussion
@@ -881,8 +881,8 @@ Data quality created challenges for estimations of mean appraised property value
 We did not face the same challenges with zoning type, where measurement error was low to non-existent. We were able to fill in zoning type for all sampled units and classification into zones that allow for multi-family housing and zones that restrict multi-family housing was straightforward.  
 
 Two key takeaways from this project:
-1. Applications of probability sampling with low measurement error are more enjoyable than application with high measurement error or survey nonresponse. 
-2. Measurement error and survey nonresponse are pressing issues in applications of probability sampling and warrant further exploration by the authors of this report. 
+1. Applications of probability sampling with low measurement error are more enjoyable than application with high measurement error or survey non response. 
+2. Measurement error and survey non response are pressing issues in applications of probability sampling and warrant further exploration by the authors of this report. 
 
 \newpage
 
