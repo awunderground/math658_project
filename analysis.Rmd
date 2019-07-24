@@ -24,7 +24,9 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 })
 ```
 
-# Zoning out: an analysis of zoning and property values in Washington, D.C.
+\raggedright
+
+# Zoning out: an analysis of zoning and property values in Washington, DC
 
 ### Brian Bontempo, Derrick Lee, and Aaron R. Williams
 
@@ -40,13 +42,13 @@ knitr::include_graphics("images/1621T.JPG")
 
 ## 1. Need Statement
 
-Washington D.C. is consistently ranked as one of the most-expensive places to live in America (@Goetz19, @Frohlich19, @Kiersz19). A main driver of affordability challenges in the District is housing. Rents and home purchase prices have grown dramatically during the last two decades and affordability challenges have surged across the community's 68 square miles. At the same, Washington D.C.'s restrictive zoning, height limitation, and excessive historical preservation have constrained housing supply during a period of robust economic and population growth. 
+Washington, DC is consistently ranked as one of the most-expensive places to live in America (@Goetz19, @Frohlich19, @Kiersz19). A main driver of affordability challenges in the District is the high cost of housing. Rents and home purchase prices have grown dramatically during the last two decades and affordability challenges have surged across the community's 68 square miles. At the same, Washington, DC's restrictive zoning, height limitation, and excessive historic preservation have constrained housing supply during a period of robust economic and population growth. 
 
-This study aims to understand the cost of housing and the nature of zoning in Washington, D.C. and in its four quadrants. As subsequent sections will demonstrate, there are rich sources of information about property values and zoning rules in Washington, D.C., but it is difficult to extract information about population parameters from those sources. A probability sample of residences is to be taken to estimate the value of residential properties and the proportion of properties with zoning that allows for multi-family housing. 
+This study aims to understand the cost of housing and the nature of zoning in Washington, DC and in its four quadrants. As subsequent sections will demonstrate, there are rich sources of information about property values and zoning rules in Washington, DC, but it is difficult to extract information about population parameters from those sources. A probability sample of residences was taken to estimate the value of residential properties and the proportion of properties with zoning that does not restrict multi-family housing. 
 
 ## 2. Target Population
 
-Our target population is the set of all official residential housing units in the city of Washington, D.C., or at least all residential housing units included in the Master Address Repository. This population explicitly excludes any government or commercial units such as offices, museums, and public spaces. The target population also includes both occupied and unoccupied residential units, as well as individual units contained in multi-family residential buildings. 
+Our target population is the set of all official residential housing units in the city of Washington, DC, or at least all residential housing units included in the Master Address Repository. This population explicitly excludes any government or commercial units such as offices, museums, or public spaces. The target population also includes both occupied and unoccupied residential units, and individual units contained in multi-family residential buildings. 
 
 ## 3. Sampling Frame
 
@@ -55,11 +57,11 @@ Our target population is the set of all official residential housing units in th
 - II. Address Points 
   - http://opendata.dc.gov/datasets/address-points
 
-To obtain a list of all residential housing units in Washington, D.C., we sourced two datasets prepared by The District of Columbia Geographical Information System (DC GIS) on June 25th, 2019. The first dataset, Address Residential Units(I), contains all Multifamily residential units and attributes specifically pertaining to units within condominiums and apartments. With a total of 251,180 records, the dataset is extensive as it lists individual units of these Multifamily complexes in DC. The set contains multiple housing units for each street address with units being differentiated by their unit numbers (ie. Apt. 26). 
+To obtain a list of all residential housing units in Washington, DC, we sourced two datasets prepared by The District of Columbia Geographical Information System (DC GIS) on June 25th, 2019. The first dataset, Address Residential Units(I), contains all Multifamily residential units and attributes specifically pertaining to units within condominiums and apartments. With a total of 251,180 records, the dataset is extensive as it lists individual units of these Multifamily complexes in DC. The set contains multiple housing units for each street address with units being differentiated by their unit numbers (ie. Apt. 26). 
 
-The second dataset, Address Point(II), is a comprehensive list of all primary addresses within D.C. It includes 147,650 records of Single-Family, Multifamily, and non-residential addresses. Unlike the first dataset, the Address Point dataset has more variables to describe each address, such as ward ID, census block ID, and active residential occupancy counts. However, the dataset does not list the individual units within the Multifamily complexes - but rather just lists street addresses for the complexes. An apartment building that shows up as many addresses in the Address Residential Units dataset only shows up once in this data set. 
+The second dataset, Address Point(II), is a comprehensive list of all primary addresses within DC. It includes 147,650 records of Single-Family, Multifamily, and non-residential addresses. Unlike the first dataset, the Address Point dataset has more variables to describe each address, such as ward ID, census block ID, and active residential occupancy counts. However, the dataset does not list the individual units within the Multifamily complexes - but rather just lists street addresses for the complexes. An apartment building that shows up as many addresses in the Address Residential Units dataset only shows up once in this data set. 
 
-To form our Sampling Frame, we merged the two datasets - extracting key data points from each dataset. This required dropping street addresses from the Address Points dataset that appear in Address Residential Units. This avoided double counting. We were able to generate a final list of all residential housing units in Washington, D.C., comprised of 348,094 Single-family and Multi-family units. The R code in the appendix includes all transformations used to create the final dataset. Both source datasets and the final dataset include quadrant for every obsevration, which will prove valuable for stratifcation. 
+To form our Sampling Frame, we merged the two datasets - extracting key data points from each dataset. This required dropping street addresses from the Address Points dataset that appear in Address Residential Units to avoid double counting. We were able to generate a final list of all residential housing units in Washington, DC, comprised of 348,094 Single-family and Multi-family units. The R code in the appendix includes all transformations used to create the final dataset. Both source datasets and the final dataset include quadrant for every obsevration, which proved valuable for stratifcation. 
 
 ```{r r-setup}
 # load necessary packages
@@ -183,7 +185,7 @@ ap <- ap %>%
 
 ```{r}
 # Finally, we can combine the two datasets to create a sampling frame that 
-# contains approximately every residential address in Washington D.C.
+# contains approximately every residential address in Washington, DC
 
 sampling_frame <- bind_rows(ap, aru_expanded) 
 
@@ -194,7 +196,7 @@ write_csv(sampling_frame, "data/sampling_frame.csv")
 
 ## 4. Primary Parameters
 
-Our primary parameters of interest were the average appraised property value of the D.C. residential units in our sampling frame and the proportion of units that allow for multi-family housing like apartments and condos. Our goal was not only to produce reliable estimates for the entire target population (for which we used a stratified random sample), but also to obtain reliable estimates for each of our strata -- i.e., for the NW, NE, SW, and SE quadrants of D.C. Furthermore, we sought to estimate the difference between the average appraised property of D.C. housing units in areas that allow for multi-family housing and the average appraised value of housing units in areas that do not allow for multi-family housing.  
+Our primary parameters of interest were the average appraised property value of the DC residential units in our sampling frame and the proportion of units in areas that don't restrict multi-family housing like apartments and condos. Our goal was not only to produce reliable estimates for the entire target population (for which we used a stratified random sample), but also to obtain reliable estimates for each of our strata -- i.e., for the NW, NE, SW, and SE quadrants of DC. 
 
 - Mean appraised property value in Washington, DC
 - Mean appraised property value in each quadrant of Washington, DC
@@ -203,7 +205,7 @@ Our primary parameters of interest were the average appraised property value of 
 
 ## 5. Questionnaire/Instrument
 
-Although we did visit several of the sample units in person, not much relevant information could have been gained from going to our housing units. In particular, we did not have sufficient knowledge or information to accurately appraise a unit’s property value, nor could we have identified a unit’s zone district type. Nonetheless, even though we had to use online sources to obtain our data, we had to manually enter each address into a given website; in other words, the data for our parameters of interest were not already neatly organized, and it would not have been feasible for us to have obtained measurements for all the units in our sampling frame (thus necessitating a sample survey).      
+Although we visited several of the sample units in person, not much relevant information could have been gained from visiting the addresses. In particular, we did not have sufficient knowledge or information to accurately appraise a unit’s property value, nor could we have identified a unit’s zoning type. Nonetheless, even though we had to use online sources to obtain our data, we had to manually enter each address into a given website; in other words, the data for our parameters of interest were not already neatly organized, and it would not have been feasible for us to obtain measurements for all the units in our sampling frame (thus necessitating a sample survey).      
 
 Our primary instruments for measuring and capturing data were the government housing database web portals and Redfin:
 
@@ -214,15 +216,15 @@ Our primary instruments for measuring and capturing data were the government hou
 - III. DC Tax Service Web Portal 
   - https://www.taxpayerservicecenter.com/RP_Search.jsp?search_type=Assessment
 
-Zone district types were captured with the official DC Zoning Map (I). Once the street number, street name, and quadrant are entered, the website generates the address’s various zoning data, including its Zone district type. Once the type was identified, we recorded the following data points for each residential housing unit in our sample: (1) Street Number, (2) Street Name, (3) Quadrant, (4) Unit Number, (5) Unit Type, (6) Zone Type. 
+Zone district types were captured with the official DC Zoning Map (I). Once the street number, street name, and quadrant are entered, the website generates the address’s various zoning data, including its Zone district type. Once the type was identified, we recorded the following data points for each residential housing unit in our sample: (1) Street Number, (2) Street Name, (3) Quadrant, (4) Unit Number, (5) Unit Type, (6) Zone Type. Example zone district types are RA-4, which permits medium to high-desnity apartments, and RF-1, which permits development of attached rowhouses on small lots.
 
-Additionally, we captured the appraised values (Land and Improvement values) for each unit with Redfin (II) and the DC Tax Service web portal (III). First, with Redfin, we entered the street number, street name, quadrant, and city of each unit to return various property details, from which we obtained the Land and Addition (Improvement) dollar amounts of the unit. If we were not able to acquire the data points through Redfin, we then utilized the DC Tax Service web portal with the same data entry to obtain the Land and Improvement values of the properties. For condominiums and single-family units, we obtained unit-specific appraised values, while for multi-family apartments, we obtained their total building appraised values. These two additional data points were then appended to the above six data points for the selected sample units: (7) Land Value, (8) Improvement Value. 
+Additionally, we captured the appraised values (Land and Improvement values) for each unit with Redfin (II) and the DC Tax Service web portal (III). First, with Redfin, we entered the street number, street name, quadrant, and city of each unit to return various property details, from which we obtained the Land and Addition (Improvement) dollar amounts of the unit. If we were not able to acquire the data points through Redfin, we then utilized the DC Tax Service web portal with the same data entry to obtain the Land and Improvement values of the properties. For condominiums and single-family units, we obtained unit-specific appraised values, while for multi-family apartments, we obtained their total building appraised values and adjusted for the number of residents in the building. These two additional data points were then appended to the above six data points for the selected sample units: (7) Land Value, (8) Improvement Value. 
 
 ## 6. Pilot Survey
 
-In order to determine the sample allocation for our stratified random sample, we first needed to obtain an estimate for the variance of the appraised property values in our target population. By Theorem 9.1 (Wright 165), the sample variance $s^2$ is an unbiased estimator of the population variance $S^2$ under simple random sampling. Therefore, for our pilot survey, we took a simple random sample of size 25 from each of the four D.C. quadrants and combined these samples to obtain a stratified random sample of size 100 (though computers technically use deterministic methods, we used R to approximate the selection of this stratified random sample). 
+In order to determine the sample allocation for our stratified random sample, we first needed to obtain an estimate for the variance of the appraised property values in our target population. By Theorem 9.1 (Wright 165), the sample variance $s^2$ is an unbiased estimator of the population variance $S^2$ under simple random sampling. Therefore, for our pilot survey, we took a simple random sample of size 25 from each of the four DC quadrants and combined these samples to obtain a stratified random sample of size 100 (though computers technically use deterministic methods, we used R to approximate the selection of this stratified random sample). 
 
-By Problem 9.A.3 (Wright 169), when a variable of interest can take on only the values 0 and 1, the sample variance can be rewritten as $s^2 = \frac{n}{n - 1} \hat{p} (1 - \hat{p})$. Since $n$ is arbitrary, then this result also holds for $N$. In other words, when we are trying to estimate a proportion, the population variance can be written as $S^2 = \frac{N}{N - 1} p(1 - p)$. Since $p(1 - p)$ attains its maximum value at p = 0.5, we decided to be conservative by simply “assuming” that the proportion of housing units in our population that in zones that don’t restrict multi-family equals 0.5. Thus, we did not need to calculate the pilot sample variance for our zoning type parameter.
+By Problem 9.A.3 (Wright 169), when a variable of interest can take on only the values 0 and 1, the sample variance can be rewritten as $s^2 = \frac{n}{n - 1} \hat{p} (1 - \hat{p})$. Since $n$ is arbitrary, then this result also holds for $N$. In other words, when we are trying to estimate a proportion, the population variance can be written as $S^2 = \frac{N}{N - 1} p(1 - p)$. Since $p(1 - p)$ attains its maximum value at p = 0.5, we decided to be conservative by simply “assuming” that the proportion of housing units in our population in zones that don’t restrict multi-family equals 0.5. Thus, we did not need to calculate the pilot sample variance for our zoning type parameter.
 
 For the appraised property value, on the other hand, we attempted to enter each of the addresses into the DC Tax Service web portal and Redfin. Unfortunately, there were missing values for several of the housing units. In an attempt to rectify this problem, we recognized that since we took a simple random sample from each quadrant, then, within each quadrant, Theorem 9.2 (Wright 169) implies that the sample proportion of housing units with missing values is an unbiased estimator of the true proportion of housing units with missing values. Since it would not have been feasible to determine exactly how many housing units in our population have missing values, we therefore calculated the sample proportion of missing values for each quadrant and computed “adjusted” $N_h$ values for each of our four strata. Consequently, we ended up with an “adjusted” $N$ value, which was our estimated number of housing units that did not have missing values. These were the $N_h$ and $N$ values that we used in our sample selection and allocation algorithms.   
 
@@ -261,14 +263,16 @@ pilot_sample %>%
   summarize(mean = mean(property_value, na.rm = TRUE),
             s_squared_h = var(property_value, na.rm = TRUE), 
             missing_prop = mean(is.na(property_value))) %>%
-  kable(caption = "Pilot survey summary statistics")  
+  kable(caption = "Pilot survey summary statistics",
+        col.names = c("$\\bar{y}$", "$s^2$", "Proportion missing"))  
 
 pilot_sample %>%
   group_by(quadrant) %>%
   summarize(mean = mean(property_value, na.rm = TRUE),
             s_squared_h = var(property_value, na.rm = TRUE), 
             missing_prop = mean(is.na(property_value))) %>%
-  kable(caption = "Pilot survey summary statistics by quadrant")
+  kable(caption = "Pilot survey summary statistics by quadrant",
+        col.names = c("Quadrant", "$\\bar{y}$", "$s^2$", "Proportion missing"))
 ```
 
 ### Map of the pilot survey sample units
@@ -293,7 +297,7 @@ states %>%
 
 ## 7. Determination of Sample and Strata Sizes
 
-We were interested in estimating the sample mean of property values for all D.C. residences using stratification, the sample means of property values for all residences in each quadrant of D.C., the sample proportion of residences with different zoning types for all D.C. residences using stratifcation, and the sample proportions of residences with different zoning types in each quadrant of D.C.. All four of these four estimation processes required allocating a certain number of sample units to each strata and each process has a different optimal allocation. 
+We were interested in estimating the sample mean of property values for all DC residences using stratification, the sample means of property values for all residences in each quadrant of DC, the sample proportion of residences in zones that don't restrict multi-family housing for all DC residences using stratifcation, and the sample proportions of residences in zones that don't restrcit multi-family housing. All four of these estimation processes required allocating a certain number of sample units to each stratum and each process has a different optimal allocation. 
 
 For the stratified estimates we specified a maximum variance, $V_0$, and used Exact Optimal Allocation for $\bar{y}_{str}$ and $\hat{p_{str}}$. For the estimates within each quadrant, we specified an error, $e$, and calculated an appropriate sample size for simple random sampling and a 90 percent confidence interval. Finally, we aligned all four optimal allocations and took the maximum $n_h$ for each quadrant. This didn't necessarily result in an optimal allocation for any one of our four estimates but it ensured that our allocation was adequate for each of our four estimates. 
 
@@ -301,9 +305,9 @@ For the stratified estimates we specified a maximum variance, $V_0$, and used Ex
 
 We began with a derivation of Exact Optimal Sample Allocation for $\bar{y}$.
 
-Decomposition of $V(\bar{y}_h)$:
+\hfill
 
-By Wright (12.4), $V(\bar{y}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(\bar{y}_h) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h} \frac{S^2_h}{n_h}$
+Decomposition of $V(\bar{y}_h)$:
 
 \hfill
 
@@ -354,9 +358,9 @@ For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, one can f
 
 3) Since the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\bar{y}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \sum_{h = 1}^H \frac{N_h(N_h - 1)S^2_h}{N^2}$
 
-4) Pick value (1) from the table and increase the associated stratum's sample size by 1, o that the updated allocation is $(n_{12}, n_{22}, ..., n_{H2})$, where exactly one of the $n_{h2}$'s is equal to 2 and the rest are equal to 1. Then, compute $V(\bar{y}_{str}|n_{12}, ..., n_{H2} = V(\bar{y}_{str}|n_{11}, ..., n_{H1}) - \frac{1}{N^2}$ where "(1)" represents the largest value from the table. If $V(\bar{y}_{str}|N_{12}, ..., n_{H2} \leq V_0$, then stop with $n_1 = n_{12}, ..., N_H = N_{H2}$. Otherwise, go to step 5. 
+4) Pick value (1) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{12}, n_{22}, ..., n_{H2})$, where exactly one of the $n_{h2}$'s is equal to 2 and the rest are equal to (1). Then, compute $V(\bar{y}_{str}|n_{12}, ..., n_{H2} = V(\bar{y}_{str}|n_{11}, ..., n_{H1}) - \frac{1}{N^2}$ where "(1)" represents the largest value from the table. If $V(\bar{y}_{str}|N_{12}, ..., n_{H2}) \leq V_0$, then stop with $n_1 = n_{12}, ..., n_H = n_{H2}$. Otherwise, go to step 5. 
 
-5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\bar{y}_{str}|n_{13}, ..., n_{H3}) = V(\bar{y}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\bar{y}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\bar{y}_str|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj}$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
+5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\bar{y}_{str}|n_{13}, ..., n_{H3}) = V(\bar{y}_{str}|n_{12}, ..., n_{H2}) - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\bar{y}_{str}|n_{13}, ..., N_H) \leq V_0$, then stop with $n_1 = n_{13}, ..., n_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\bar{y}_{str}|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
 
 \hfill
 
@@ -400,10 +404,9 @@ starting_variance <- starting_variance %>%
   summarize(V = sum(strata_variance)) %>%
   pull()
 
-starting_variance
 ```
 
-This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional prioirty value from the starting variance to get what we call a "marginal variance".
+This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional prioirty value from the starting variance to get the variance of the estimator with the given allocation.
 
 ```{r mean-prioirty-values}
 # create a table of priority values
@@ -429,7 +432,7 @@ priority_values <- n_strata %>%
 # (7)
 priority_values <- priority_values %>%
   mutate(agg_priority_value = cumsum(priority_value)) %>%
-  mutate(marginal_variance = starting_variance - agg_priority_value)
+  mutate(variance = starting_variance - agg_priority_value)
 
 kable(head(select(priority_values, -missing_prop, -N), n = 10), digits = 0)
 
@@ -441,23 +444,27 @@ We chose a $V_0$ of 0.1 times the mean from the pilot survey squared and then se
 ```{r}
 condition1 <- priority_values %>%
   mutate(stratum = factor(stratum)) %>%
-  filter(marginal_variance >= ((0.1 * (mean(pilot_sample$property_value, na.rm = TRUE))) ^ 2))
+  filter(variance >= ((0.1 * (mean(pilot_sample$property_value, na.rm = TRUE))) ^ 2))
 
 condition1 <- condition1 %>%
   count(stratum, .drop = FALSE)
 ```
 
-```{r}
+### Variance of $\bar{y}_{str}$ with Exact Optimal Allocation at the $ith$ unit
+
+```{r fig.height = 3}
 priority_values %>%
   mutate(x = row_number()) %>%
-  ggplot(aes(x = x, y = marginal_variance)) +
+  ggplot(aes(x = x, y = variance)) +
   geom_line() +
-  scale_x_continuous(expand = c(0, 0),
-                     limits = c(0, 350000)) + 
-  scale_y_log10() +
-  labs(title = "Variance of $\bar{y}_{str}$ with different Exact Optimal Allocations",
-       x = "ith unit sampled",
-       y = "V (log scale)")
+  scale_x_continuous(expand = expand_scale(mult = c(0.001, 0.001)),
+                     limits = c(0, 300000),
+                     labels = scales::comma,
+                     breaks = seq(0, 300000, 50000)) + 
+  scale_y_log10(labels = scales::comma) +
+  labs(x = "ith unit sampled",
+       y = "V (log scale)") +
+  theme(plot.margin = margin(r = 20))
 ```
 
 ### Condition 2: Sample means within strata
@@ -490,40 +497,29 @@ We began with a derivation of Exact Optimal Sample Allocation for $\hat{p}$.
 
 Decomposition of $V(\hat{p}_{str})$
 
-By Wright (12.14), $V(\hat{p}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(p_h) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h - 1} \frac{p(1 - p)}{n_h}$
+By noting that $\hat{p}_h$ is a special case of $\bar{y}_h$, and that when $y_i \in \{0, 1\}$ for all $i$, we can rewrite $S^2_h$ as $S^2_h = \frac{N_h}{N_h - 1}p_h(1 - p_h)$, then it follows from our decomposition of $V(\bar{y}_{str})$ that 
 
-$V(\hat{p}_h) = (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h - 1} \frac{p(1 - p)}{n_h}$
+$V(\hat{p}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(\hat{p}_h)$
 
-$V(\hat{p}_h) = \frac{N^2_h}{N^2} \frac{N_h}{N_h - 1} \frac{p(1 - p)}{n_h} - \frac{N^2_h}{N^2} \frac{n_h}{N_h - 1}\frac{p(1 - p)}{n_h}$
+$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h}{N^2} (\frac{(N_hh - 1)S^2_h}{N_h} - \frac{S^2_h}{1 \cdot 2} - \frac{S^2_h}{2 \cdot 3} - ... - \frac{S^2_h}{n_h(n_h - 1)})$
 
-$V(\hat{p}_h) = \frac{N^2_h}{N^2} \frac{N_h}{N_h - 1} \frac{p(1 - p)}{n_h} - \frac{N^2_h}{N^2} \frac{n_h}{N_h - 1}\frac{p(1 - p)}{n_h}$
-
-$V(\hat{p}_h) = \frac{N^3_h p(1 - p)}{N^2 (N_h - 1)} \frac{1}{n_h} - \frac{N^2_h p(1 - p)}{N^2 (N_h - 1)}$
-
-$V(\hat{p}_h) = \frac{N^3_h p(1 - p)}{N^2 (N_h - 1)} (1 - \frac{1}{1 \cdot 2} - \frac{1}{2 \cdot 3} - \cdot\cdot\cdot  - \frac{1}{n_h(n_h - 1)}) - \frac{N^2_h p(1 - p)}{N^2 (N_h - 1)}$
-
-$V(\hat{p}_h) = \frac{N^3_h p(1 - p)}{N^2(N_h - 1)} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot n_h(n_h - 1)} - \frac{N^2_h p(1 - p)}{N^2 (N_h - 1)}$
-
-$V(\hat{p}_h) = \frac{(N^3_h - N^2_h) p(1 - p)}{N^2(N_h - 1)} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot n_h(n_h - 1)}$
-
-$V(\hat{p}_h) = \frac{N^2_h (N_h - 1) p(1 - p)}{N^2(N_h - 1)} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 2 \cdot 3} - \cdot\cdot\cdot - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot n_h(n_h - 1)}$
+$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h}{N^2} (\frac{(N_h - 1)}{N_h}\frac{N_h p_h(1- p_h)}{(N_h - 1)} - \frac{N_hp_h(1 - p_h)}{(N_h - 1)(1 \cdot 2)} - \frac{N_hp_h(1 - p_h)}{(N_h - 1)(2 \cdot 3)} - ... - \frac{N_hp_h(1 - p_h)}{(N_h - 1)(n_h)(n_h - 1)})$
 
 \hfill
 
 Decomposition of $V(\hat{p}_{str})$
 
-$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_h (N_h - 1) p(1 - p)}{N^2(N_h - 1)}$
+$V(\hat{p}_{str}) = \sum_{h = 1}^H \frac{N^2_hp_h(1 - p_h)}{N^2}$
 
-
-$- \frac{N^3_1 p(1 - p)}{N^2(N_1 - 1) \cdot 1 \cdot 2} - \frac{N^3_1 p(1 - p)}{N^2(N_1 - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_1 p(1 - p)}{N^2(N_1 - 1) n_h(n_h - 1)}$
-
-...
-
-$- \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_h p(1 - p)}{N^2(N_h - 1) n_h (n_h - 1)}$
+$- \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) \cdot 1 \cdot 2} - \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_1 p_1(1 - p_1)}{N^2(N_1 - 1) n_h(n_h - 1)}$
 
 ...
 
-$- \frac{N^3_H p(1 - p)}{N^2(N_H - 1) \cdot 1 \cdot 2} - \frac{N^3_H p(1 - p)}{N^2(N_H - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_H p(1 - p)}{N^2(N_H - 1) n_h (n_h - 1)}$
+$- \frac{N^3_h p_h(1 - p_h)}{N^2(N_h - 1) \cdot 1 \cdot 2} - \frac{N^3_h p_h(1 - p_h)}{N^2(N_h - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_h p_h(1 - p_h)}{N^2(N_h - 1) n_h (n_h - 1)}$
+
+...
+
+$- \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) \cdot 1 \cdot 2} - \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) \cdot 2 \cdot 3} - ... - \frac{N^3_H p_H(1 - p_H)}{N^2(N_H - 1) n_h (n_h - 1)}$
 
 \hfill
 
@@ -544,9 +540,9 @@ For a desired bound on $V_0$ on the sampling variance $V(\hat{p}_{str})$, one ma
 
 3) Since the initial allocation is $(n_{11}, n_{21}, ..., n_{H1}) = (1, 1, ..., 1)$, compute $V(\hat{p}_{str}|n_{11} = 1, n_{21} = 1, ..., n_{H1} = 1) = \frac{1}{N^2} \sum_{h = 1}^H ((N^2_h - N_h) S^2_h)$
 
-4) Pick value (1) from the table and increase the associated stratum's sample size by 1, o that the updated allocation is $(n_{12}, n_{22}, ..., n_{H2})$, where exactly one of the $n_{h2}$'s is equal to 2 and the rest are equal to 1. Then, compute $V(\hat{p}_{str}|n_{12}, ..., n_{H2} = V(\hat{p}_{str}|n_{11}, ..., n_{H1}) - \frac{1}{N^2}$ where "(1)" represents the largest value from the table. If $V(\hat{p}_{str}|N_{12}, ..., n_{H2} \leq V_0$, then stop with $n_1 = n_{12}, ..., N_H = N_{H2}$. Otherwise, go to step 5. 
+4) Pick value (1) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{12}, n_{22}, ..., n_{H2})$, where exactly one of the $n_{h2}$'s is equal to 2 and the rest are equal to 1. Then, compute $V(\hat{p}_{str}|n_{12}, ..., n_{H2}) = V(\hat{p}_{str}|n_{11}, ..., n_{H1}) - \frac{(1)}{N^2}$ where "(1)" represents the largest value from the table. If $V(\hat{p}_{str}|N_{12}, ..., n_{H2}) \leq V_0$, then stop with $n_1 = n_{12}, ..., N_H = N_{H2}$. Otherwise, go to step 5. 
 
-5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\hat{p}_{str}|n_{13}, ..., n_{H3}) = V(\hat{p}_{str}|n_{12}, ..., n_{H2} - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\hat{p}_{str}|n_{13}, ..., N_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\hat{p}_{str}|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
+5) Pick value (2) from the table and increase the associated stratum's sample size by 1, so that the updated allocation is $(n_{13}, ..., n_{H3})$. Then compute $V(\hat{p}_{str}|n_{13}, ..., n_{H3}) = V(\hat{p}_{str}|n_{12}, ..., n_{H2}) - \frac{(2)}{N^2}$, where "(2)" represents the second value from the table. If $V(\hat{p}_{str}|n_{13}, ..., N_H \leq V_0$, then stop with $n_1 = n_{13}, ..., n_H = n_{H3}$. Otherwise, continue until step $j$, where $V(\hat{p}_{str}|n_{1j}, ..., n_{Hj}) \leq V_0$. The final allocation is $n_{1j}, ..., n_{Hj})$ and $n = n_{1j} + \cdot\cdot\cdot + n_{Hj}$.
 
 ```{r}
 # 
@@ -576,7 +572,7 @@ starting_variance <- starting_variance %>%
   pull()
 ```
 
-This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional prioirty value from the starting variance to get what we call a "marginal variance".
+This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional prioirty value from the starting variance to get the variance of the estimator conditional on the given allocation.
 
 ```{r}
 # create a table of priority values
@@ -603,7 +599,7 @@ priority_values <- n_strata %>%
 # (7)
 priority_values <- priority_values %>%
   mutate(agg_priority_value = cumsum(priority_value)) %>%
-  mutate(marginal_variance = starting_variance - agg_priority_value)
+  mutate(variance = starting_variance - agg_priority_value)
 
 kable(head(select(priority_values, -N), n = 10), align = "l")
 
@@ -612,21 +608,26 @@ rm(n_strata)
 
 We chose a $V_0$ of 0.1 times the mean from the pilot survey squared and then selected the largest priority values that achieved $V_0$ the quickest. 
 
-```{r}
+### Variance of $\hat{p}_{str}$ with Exact Optimal Allocation at the $ith$ unit
+
+```{r fig.height = 3}
 priority_values %>%
   mutate(x = row_number()) %>%
-  ggplot(aes(x = x, y = marginal_variance)) +
+  ggplot(aes(x = x, y = variance)) +
   geom_line() +
-  scale_x_continuous(expand = c(0, 0.05),
-                     limits = c(0, 300000)) +
+  scale_x_continuous(expand = expand_scale(mult = c(0.005, 0.005)),
+                     limits = c(0, 350000),
+                     labels = scales::comma,
+                     breaks = seq(0, 350000, 50000)) + 
   scale_y_log10() +
   labs(x = "ith unit sampled",
-       y = "V (log scale)")
+       y = "V (log scale)") +
+  theme(plot.margin = margin(r = 20))
 ```
 
 ```{r}
 condition3 <- priority_values %>%
-  filter(marginal_variance >= ((0.1 * 0.5) ^ 2))
+  filter(variance >= ((0.1 * 0.5) ^ 2))
 
 condition3 <- count(condition3, stratum)
 ```
@@ -671,7 +672,8 @@ tibble(quadrant = condition1$stratum,
        `2.` = condition2$n,
        `3.` = condition3$n,
        `4.` = condition4$n) %>%
-  kable(caption = "Recommended strata sizes across the four conditions")
+  kable(caption = "Recommended strata sizes across the four conditions",
+        digits = 2)
 ```
 
 ```{r}
@@ -874,7 +876,7 @@ Like appraised property values, there is significant heterogeneity in the propor
 
 > “You go to data analysis with the data you have, not the data you might want or wish to have at a later time.” ~ Anonymous
 
-Data quality created challenges for estimations of mean appraised property values. Some units in the sampling frame, pilot survey, and final survey were missing values from both the DC Tax Service Web Portal and Redfin. We did our best to accommodate these missing values, but the uncertainty of our estimates almost certainly exceeded our calculated standard errors. 
+Data quality created challenges for estimations of mean appraised property values. Some units in the sampling frame, pilot survey, and final survey were missing values from both the DC Tax Service Web Portal and Redfin. We did our best to accommodate these missing values, but the uncertainty of our estimates almost certainly exceeded our calculated standard errors. In particular, many of the missing property values appeared to come from public housing of different sorts. This means the true parameter for mean housing value in Washington, DC is likely slightly lower than our estimate.   
 
 We did not face the same challenges with zoning type, where measurement error was low to non-existent. We were able to fill in zoning type for all sampled units and classification into zones that allow for multi-family housing and zones that restrict multi-family housing was straightforward.  
 
