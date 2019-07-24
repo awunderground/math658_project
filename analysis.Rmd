@@ -43,16 +43,27 @@ This study aims to understand the cost of housing and the nature of zoning in Wa
 
 ## 3. Sampling Frame
 
-### Download the data
+1. Address Residential Units (https://opendata.dc.gov/datasets/c3c0ae91dca54c5d9ce56962fa0dd645_68)
+2. Address Points (http://opendata.dc.gov/datasets/address-points)
+
+
+To obtain a list of all residential housing units in Washington, D.C., we sourced two datasets prepared by The District of Columbia Geographical Information System (DC GIS) on June 25th, 2019. The first dataset, Address Residential Units(I), contains all Multifamily residential units and attributes specifically pertaining to units within condominiums and apartments. With a total of 251,180 records, the dataset is extensive as it lists individual units of these Multifamily complexes in DC. The set contains multiple housing units for each street address with units being differentiated by their unit numbers (ie. Apt. 26). 
+
+The second dataset, Address Point(II), is a comprehensive list of all primary addresses within D.C. It includes 147,650 records of Single-Family, Multifamily, and non-residential addresses. Unlike the first dataset, the Address Point dataset has more variables to describe each address, such as ward ID, census block ID, and active residential occupancy counts. However, the dataset does not list the individual units within the Multifamily complexes - but rather just lists street addresses for the complexes. An apartment building that shows up as many addresses in the Address Residential Units dataset only shows up once in this data set. 
+
+To form our Sampling Frame, we merged the two datasets - extracting key data points from each dataset. This required dropping street addresses from the Address Points dataset that appear in Address Residential Units. This avoided double counting. We were able to generate a final list of all residential housing units in Washington, D.C., comprised of 348,094 Single-family and Multi-family units. The R code in the appendix includes all transformations used to create the final dataset. Both source datasets and the final dataset include quadrant for every obsevration, which will prove valuable for stratifcation. 
 
 ```{r r-setup}
+# load necessary packages
 library(tidyverse)
 library(knitr)
 library(urbnmapr)
 library(urbnthemes)
+library(survey)
 ```
 
 ```{r download-data}
+# Download the data
 # file path to csv with addresses
 aru_file_path <- 
   "https://opendata.arcgis.com/datasets/c3c0ae91dca54c5d9ce56962fa0dd645_68.csv"
@@ -207,7 +218,7 @@ rm(ap, aru_expanded)
 
 #summarize_all(addresses, list(~sum(is.na(.))))
 
-write_csv(sampling_frame, "sampling_frame.csv")
+write_csv(sampling_frame, "data/sampling_frame.csv")
 ```
 
 ## 4. Primary Parameters
@@ -603,7 +614,7 @@ condition3 <- count(condition3, stratum)
 
 ### Condition 4: Sample proportion within strata
 
-We are interested in comparing $\hat{p}_{h}$ from the four different quadrants. 
+We are interested in comparing $\hat{p}_h$ from the four different quadrants. 
 
 $n = \frac{N p(1 - p)}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + p(1 - p)}$
 
@@ -668,8 +679,6 @@ survey %>%
   sample_n(10) %>%
   select(status, fulladdress, res_type) %>%
   kable()
-
-count(survey, quadrant)
 ```
 
 ```{r}
@@ -696,9 +705,148 @@ states %>%
   theme_urbn_map()
 ```
 
-## 9. Estimation Plan
+## 9. Estimation
 
-## 10. Other Analyses
+```{r}
+Nh <- count(sampling_frame, quadrant)
+
+represented_zones <- read_csv("data/represented-zones.csv")
+
+final_survey <- read_csv("data/final-survey.csv") %>%
+  mutate(property_value = land_value + improvement_value) %>%
+  mutate(property_value = ifelse(unittype == "RENTAL" & 
+                                   active_res_occupancy_count > 4 &
+                                   property_value > 500000,
+                                 property_value / active_res_occupancy_count,
+                                 property_value
+                                 ))
+
+final_survey <- left_join(final_survey, Nh, by = "quadrant") %>%
+  rename(fpc = n)
+
+final_survey <- left_join(final_survey, represented_zones, by = "zoning")
+
+
+strat_design <- svydesign(id = ~1, data = final_survey, strata = ~quadrant, fpc = ~fpc)
+```
+
+## Sample statistics
+
+
+
+
+
+## $\mathbf{\bar{y}_{str}}$
+
+The first parameter we estimated was the stratifed sample mean of the appraised property value in Washington DC. We also estimated a 95% confidence interval for the parameter. 
+
+$\bar{y}_{str} = \sum_{h = 1}^H \frac{N_h}{N} \bar{y}_h$
+
+\hfill
+
+$\hat{V}(\bar{y}_h) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h} \frac{s^2_h}{n_h}$
+
+\hfill
+
+$(\bar{y}_{str} - Z_{\frac{\alpha}{2}} \sqrt{\hat{V}(\bar{y}_h)}, \bar{y}_{str} + Z_{\frac{\alpha}{2}} \sqrt{\hat{V}(\bar{y}_h)})$
+
+\hfill
+
+```{r stratified-mean}
+tibble(
+  Mean = svymean(~property_value, strat_design, na.rm = TRUE)[1],
+  Lower = confint(svymean(~property_value, strat_design, na.rm = TRUE))[1],
+  Upper = confint(svymean(~property_value, strat_design, na.rm = TRUE))[2]
+) %>%
+  kable(caption = "Mean appraised property value and 95% confidence interval",
+        digits = 0)
+```
+
+## $\mathbf{\bar{y}_h}$
+
+We were interested in comparing mean appraised property values across the District with each other. To this end, we treated each strata as its own simple random sample and calculated estimates and 95% confidence intervals for the parameters in each strata. 
+
+$\bar{y}_h = \sum_{i = 1}^{n_h}$
+
+\hfill
+
+$s^2 = \frac{\sum_{i = 1}^{n_h} (y_i - \bar{y}_h)^2}{n_h - 1}$ where $i$ is the $ith$ observation in the strata. 
+
+\hfill
+
+$\hat{V}(\bar{y}_h) = (\frac{N_h - n_h}{N_h})^2 \frac{s^2}{n}$
+
+```{r strata-means}
+svyby(~property_value,            # variable to estimate
+      ~quadrant,                  # subgroup variable
+      design = strat_design,
+      FUN = svymean,              # function to use on each subgroup
+      keep.names = FALSE,         # does not include row.names 
+      na.rm = TRUE,
+      vartype = "ci"
+      ) %>%
+  kable(digits = 0)
+```
+
+## $\mathbf{\hat{p}_{str}}$
+
+The third main parameter estimated was the stratifed proportion of addresses with multi-family zoning in Washington DC. We also estimated a 95% confidence interval for the parameter. 
+
+$\hat{p}_{str} = \sum_{h = 1}^H \frac{N_h}{N} \hat{p}_h$
+
+\hfill
+
+$\hat{V}(\hat{p}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h} \frac{\hat{p}_h(1 - \hat{p}_h}{n_h - 1}$
+
+\hfill
+
+$(\hat{p}_{str} - Z_{\frac{\alpha}{2}} \sqrt{\hat{V}(\hat{p}_{str})}, \hat{p}_{str} + Z_{\frac{\alpha}{2}} \sqrt{\hat{V}(\hat{p}_{str})})$
+
+```{r}
+tibble(
+  Mean = svymean(~multifamily, strat_design)[1],
+  Lower = confint(svymean(~multifamily, strat_design))[1],
+  Upper = confint(svymean(~multifamily, strat_design))[2]
+) %>%
+  kable(caption = "",
+        digits = 3)
+```
+
+## $\mathbf{\hat{p}_h}$
+
+Finally, we were interested in comparing the proportion of addresses with multi-family zoning in quadrants across the District with each other. To this end, we treated each strata as its own simple random sample and calculated estimates and 95% confidence intervals for the parameters in each strata. 
+
+$\hat{p}_h = \frac{\sum_{i = 1}^{n_h} y_i}{n_h}$ where $y_i$ is the indicator variable $$y_i = \begin{cases} 
+      1 & \text{if the ith unit has the attribute} \\
+      0 & \text{if the ith unit does not have the attribute}
+   \end{cases}$$
+
+\hfill
+   
+$\hat{V}(\hat{p}_h) = (\frac{N_h - n_h}{N_h}) \frac{\hat{p}_h(1 - \hat{p}_h)}{n_h - 1}$
+
+\hfill
+
+$(\hat{p}_h - Z_{\frac{\alpha}{2}} \sqrt{\hat{V}(\hat{p}_h)}, \hat{p}_h + Z_{\frac{\alpha}{2}} \sqrt{\hat{V}(\hat{p}_h)})$
+
+```{r}
+svyby(~multifamily,            # variable to estimate
+      ~quadrant,                  # subgroup variable
+      design = strat_design,
+      FUN = svymean,              # function to use on each subgroup
+      keep.names = FALSE,         # does not include row.names 
+      na.rm = TRUE,
+      vartype = "ci"
+      ) %>%
+  kable(digits = 3)
+```
+
+## 10. Discussion
+
+data quality mattered a lot!
+
+
+
 
 \newpage
 
