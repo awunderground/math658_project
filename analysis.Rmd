@@ -28,6 +28,12 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 
 ### Brian Bontempo, Derrick Lee, and Aaron R. Williams
 
+\hfill
+
+```{r out.width = "50%", echo = FALSE, fig.align = "center"}
+knitr::include_graphics("images/1621T.JPG")
+```
+
 \newpage
 
 ## Introduction
@@ -44,9 +50,10 @@ Our target population is the set of all official residential housing units in th
 
 ## 3. Sampling Frame
 
-1. Address Residential Units (https://opendata.dc.gov/datasets/c3c0ae91dca54c5d9ce56962fa0dd645_68)
-2. Address Points (http://opendata.dc.gov/datasets/address-points)
-
+- I. Address Residential Units 
+  - https://opendata.dc.gov/datasets/c3c0ae91dca54c5d9ce56962fa0dd645_68
+- II. Address Points 
+  - http://opendata.dc.gov/datasets/address-points
 
 To obtain a list of all residential housing units in Washington, D.C., we sourced two datasets prepared by The District of Columbia Geographical Information System (DC GIS) on June 25th, 2019. The first dataset, Address Residential Units(I), contains all Multifamily residential units and attributes specifically pertaining to units within condominiums and apartments. With a total of 251,180 records, the dataset is extensive as it lists individual units of these Multifamily complexes in DC. The set contains multiple housing units for each street address with units being differentiated by their unit numbers (ie. Apt. 26). 
 
@@ -61,6 +68,8 @@ library(knitr)
 library(urbnmapr)
 library(urbnthemes)
 library(survey)
+
+set_urbn_defaults(style = "print")
 ```
 
 ```{r download-data}
@@ -284,13 +293,13 @@ states %>%
 
 ## 7. Determination of Sample and Strata Sizes
 
-We are interested in estimating the sample mean of property values for all D.C. residences using stratification, the sample means of property values for all residences in each quadrant of D.C., the sample proportion of residences with different zoning types for all D.C. residences using stratifcation, and the sample proportions of residences with different zoning types in each quadrant of D.C.. All four of these four estimation processes requires allocating a certain number of sample units to each strata and each process has a different optimal allocation. 
+We were interested in estimating the sample mean of property values for all D.C. residences using stratification, the sample means of property values for all residences in each quadrant of D.C., the sample proportion of residences with different zoning types for all D.C. residences using stratifcation, and the sample proportions of residences with different zoning types in each quadrant of D.C.. All four of these four estimation processes required allocating a certain number of sample units to each strata and each process has a different optimal allocation. 
 
-For the stratified estimates we will specify a maximum variance, $V_0$, and use Exact Optimal Allocation for $\bar{y}_{str}$ and $\hat{p_{str}}$. For the estimates within each quadrant, we will specify an error, $e$, and calculate an appropriate sample size for simple random sampling and a 90 percent confidence interval. Finally, we will align all four optimal allocations and take the maximum $n_h$ for each quadrant. This won't necessarily result in an optimal allocation for any one of our four estimates but it will ensure that our allocation is adequate for each of our four estimates. 
+For the stratified estimates we specified a maximum variance, $V_0$, and used Exact Optimal Allocation for $\bar{y}_{str}$ and $\hat{p_{str}}$. For the estimates within each quadrant, we specified an error, $e$, and calculated an appropriate sample size for simple random sampling and a 90 percent confidence interval. Finally, we aligned all four optimal allocations and took the maximum $n_h$ for each quadrant. This didn't necessarily result in an optimal allocation for any one of our four estimates but it ensured that our allocation was adequate for each of our four estimates. 
 
 ### Condition 1: Sample mean
 
-We begin with a derivation of Exact Optimal Sample Allocation for $\bar{y}$.
+We began with a derivation of Exact Optimal Sample Allocation for $\bar{y}$.
 
 Decomposition of $V(\bar{y}_h)$:
 
@@ -328,7 +337,7 @@ $- \frac{N^2_HS^2_H}{N^2 \cdot 1 \cdot 2} - \frac{N^2_HS^2_H}{N^2 \cdot 2 \cdot 
 
 \hfill
 
-For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may find an optimal allocation using the following algorithm:
+For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, one can find an optimal allocation using the following algorithm:
 
 1) Assign, for each stratum, 1 unit to be selected for the sample. 
 
@@ -351,6 +360,8 @@ For a desired bound $V_0$ on the sampling variance $V(\bar{y}_{str})$, we may fi
 
 \hfill
 
+First we estimate $s^2$ and the missing proportion for each stratum.
+
 ```{r}
 # find Nh and s2 for each strata
 # (1) and (2)
@@ -370,12 +381,11 @@ strata <- left_join(s_squared_h, Nh, by = "stratum") %>%
 
 rm(s_squared_h, Nh)
 
-kable(strata)
+kable(strata,
+      col.names = c("Stratum", "$s^2$", "Missing Prop.", "$N_h$", "N"))
 ```
 
-Step 3: $\hat{V}(\bar{y}|1, 1, 1, 1) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_H} \frac{s^2_h}{n_h} = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_h - 1}{N_H} \frac{s^2_h}{1}$ 
-
-(Wright 12.5)
+Next we estimated the variance with an initial allocation of (1, 1, 1, 1) in each stratum. 
 
 ```{r mean-initial-allocation}
 # Let the initial allocation be (n_11, n_21, n_31, n_41) = (1, 1, 1, 1) 
@@ -383,7 +393,8 @@ Step 3: $\hat{V}(\bar{y}|1, 1, 1, 1) = \sum_{h = 1}^H (\frac{N_h}{N})^2 \frac{N_
 starting_variance <- strata %>%
   mutate(strata_variance = Nh * (Nh - 1) * s_squared_h / N^2) 
 
-kable(starting_variance)
+kable(starting_variance,
+      col.names = c("Stratum", "$s^2$", "Missing Prop.", "$N_h$", "N", "Initial variance"))
 
 starting_variance <- starting_variance %>%
   summarize(V = sum(strata_variance)) %>%
@@ -392,9 +403,7 @@ starting_variance <- starting_variance %>%
 starting_variance
 ```
 
-Step 3: 
-
-Priority value = $\frac{N_1^2 \cdot s_1^2}{N_1^2 \cdot n_h(n_h - 1)}$
+This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional prioirty value from the starting variance to get what we call a "marginal variance".
 
 ```{r mean-prioirty-values}
 # create a table of priority values
@@ -414,23 +423,20 @@ priority_values <- n_strata %>%
   mutate(priority_value = (Nh ^ 2 / n) * (s_squared_h / lag(n)) * (1 / N ^ 2)) %>%
   ungroup() %>%
   arrange(desc(priority_value))
-
-kable(head(select(priority_values, -missing_prop), n = 10))
 ```
-
-Step 4:
 
 ```{r}
 # (7)
 priority_values <- priority_values %>%
   mutate(agg_priority_value = cumsum(priority_value)) %>%
-  mutate(marginal_variance = starting_variance - agg_priority_value) %>%
-  mutate(marginal_sd = sqrt(marginal_variance))
+  mutate(marginal_variance = starting_variance - agg_priority_value)
 
 kable(head(select(priority_values, -missing_prop, -N), n = 10), digits = 0)
 
 rm(n_strata)
 ```
+
+We chose a $V_0$ of 0.1 times the mean from the pilot survey squared and then selected the largest priority values that achieved $V_0$ the quickest. 
 
 ```{r}
 condition1 <- priority_values %>%
@@ -441,17 +447,30 @@ condition1 <- condition1 %>%
   count(stratum, .drop = FALSE)
 ```
 
+```{r}
+priority_values %>%
+  mutate(x = row_number()) %>%
+  ggplot(aes(x = x, y = marginal_variance)) +
+  geom_line() +
+  scale_x_continuous(expand = c(0, 0),
+                     limits = c(0, 350000)) + 
+  scale_y_log10() +
+  labs(title = "Variance of $\bar{y}_{str}$ with different Exact Optimal Allocations",
+       x = "ith unit sampled",
+       y = "V (log scale)")
+```
+
 ### Condition 2: Sample means within strata
 
-We are interested in comparing $\bar{y}_{h}$ from the four different quadrants. 
+We were interested in comparing $\bar{y}_{h}$ from the four different quadrants. 
 
 $n = \frac{N\sigma^2}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + \sigma^2}$
 
-We can use $s^2$ from our pilot survey as an unbiased estimate for $\sigma^2$. 
+We used $s^2$ from our pilot survey as an unbiased estimate for $\sigma^2$. 
 
 $n = \frac{Ns^2}{(N - 1) \frac{e^2}{z^2_{\frac{\alpha}{2}}} + s^2}$
 
-We want $120,000 precision at a 90% confidence level for the mean of property value in each strata.  
+We wanted $120,000 precision at a 90% confidence level for the mean of property value in each strata.  
 
 ```{r}
 condition2 <- strata %>%
@@ -467,7 +486,7 @@ rm(strata)
 
 ### Condition 3: Sample proportion
 
-We begin with a derivation of Exact Optimal Sample Allocation for $\hat{p}$.
+We began with a derivation of Exact Optimal Sample Allocation for $\hat{p}$.
 
 Decomposition of $V(\hat{p}_{str})$
 
@@ -508,7 +527,7 @@ $- \frac{N^3_H p(1 - p)}{N^2(N_H - 1) \cdot 1 \cdot 2} - \frac{N^3_H p(1 - p)}{N
 
 \hfill
 
-For a desired bound on $V_0$ on the sampling variance $V(\hat{p}_{str})$, we may find an optimal allocation using the following algorithm:
+For a desired bound on $V_0$ on the sampling variance $V(\hat{p}_{str})$, one may find an optimal allocation using the following algorithm:
 
 1) Assign, for each stratum, 1 unit to be selected for the sample. 
 
@@ -537,8 +556,11 @@ strata <- sampling_frame %>%
   mutate(N =sum(Nh),
          s_squared_h = 0.5 * (1 - 0.5))
   
-kable(strata)
+kable(strata,
+      col.names = c("Stratum", "$N_h$", "N", "$s^2_h"))
 ```
+
+Next we estimated the variance with an initial allocation of (1, 1, 1, 1) in each stratum. 
 
 ```{r proportion-starting-allocation}
 # Let the initial allocation be (n_11, n_21, n_31, n_41) = (1, 1, 1, 1) 
@@ -546,19 +568,19 @@ kable(strata)
 starting_variance <- strata %>%
   mutate(strata_variance = (Nh ^ 2 * (Nh - 1) * 0.25) / (N ^ 2 * (Nh - 1))) 
 
-kable(starting_variance)
+kable(starting_variance,
+      col.names = c("Stratum", "$N_h$", "N", "$s^2_h", "Initial variance"))
 
 starting_variance <- starting_variance %>%
   summarize(V = sum(strata_variance)) %>%
   pull()
-
-starting_variance
 ```
+
+This resulted in a total starting variance of `r starting_variance`. Next we calculated priority values for each potential sample unit up to the entire sampling frame and ordered those priority values from largest to smallest. We then sequentially subtracted each additional prioirty value from the starting variance to get what we call a "marginal variance".
 
 ```{r}
 # create a table of priority values
 # (4) and (5)
-
 n_strata <-
   sampling_frame %>%
   count(quadrant) 
@@ -574,8 +596,6 @@ priority_values <- n_strata %>%
   mutate(priority_value = (0.25 * Nh ^ 3) / (N ^ 2 * (Nh - 1) * n * lag(n))) %>%
   ungroup() %>%
   arrange(desc(priority_value))
-
-kable(head(priority_values, n = 10))
 ```
 
 
@@ -583,12 +603,25 @@ kable(head(priority_values, n = 10))
 # (7)
 priority_values <- priority_values %>%
   mutate(agg_priority_value = cumsum(priority_value)) %>%
-  mutate(marginal_variance = starting_variance - agg_priority_value) %>%
-  mutate(marginal_sd = sqrt(marginal_variance))
+  mutate(marginal_variance = starting_variance - agg_priority_value)
 
 kable(head(select(priority_values, -N), n = 10), align = "l")
 
 rm(n_strata)
+```
+
+We chose a $V_0$ of 0.1 times the mean from the pilot survey squared and then selected the largest priority values that achieved $V_0$ the quickest. 
+
+```{r}
+priority_values %>%
+  mutate(x = row_number()) %>%
+  ggplot(aes(x = x, y = marginal_variance)) +
+  geom_line() +
+  scale_x_continuous(expand = c(0, 0.05),
+                     limits = c(0, 300000)) +
+  scale_y_log10() +
+  labs(x = "ith unit sampled",
+       y = "V (log scale)")
 ```
 
 ```{r}
@@ -829,11 +862,25 @@ svyby(~multifamily,            # variable to estimate
 
 ## 10. Discussion
 
+### Survey conclusions
 
+We estimated that homes are very valuable in Washington, DC. We estimated a home price of $478,338 with a 95% confidence interval of ($421,675, $535,001). That said, there is meaningful heterogeneity across quadrants with homes in Northwest DC being much more valuable than homes in the other three quadrants. 
 
+We estimated fewer than half of homes in Washington, DC are in areas with zoning that does not restrict multi-family housing. We estimate that 0.417 of homes are in areas with zoning that does not restrict multi-family housing with a 95% confidence interval of (0.364, 0.471). This estimate is particularly dramatic because our sampling frame is based on addresses and not square area. In other words, the probability of selecting a home in an area with dense housing is greater than selecting a home in an area with sparse housing. It is likely that less than 0.417 of the residential land area in the District does not restrict multi-family housing. 
 
+Like appraised property values, there is significant heterogeneity in the proportion of homes in different DC quadrants that are in zones that don’t restrict multi-family housing. The pattern, with NW being less restrictive than SE and NE, runs counter to the popular story that housing is most restricted in Northwest DC. This suggests that other limitations could be at play such as historical preservation, obstinate neighborhood associations, or restrictive permitting. The high share of homes in areas that allow for multi-family housing in SW reflects recent developments in Waterfront and The Wharf and also the high share of the quadrant that doesn’t have housing at all because of L’Enfant, Interstate 395, and the military base. 
+ 
+### Process conclusions
 
+> “You go to data analysis with the data you have, not the data you might want or wish to have at a later time.” ~ Anonymous
 
+Data quality created challenges for estimations of mean appraised property values. Some units in the sampling frame, pilot survey, and final survey were missing values from both the DC Tax Service Web Portal and Redfin. We did our best to accommodate these missing values, but the uncertainty of our estimates almost certainly exceeded our calculated standard errors. 
+
+We did not face the same challenges with zoning type, where measurement error was low to non-existent. We were able to fill in zoning type for all sampled units and classification into zones that allow for multi-family housing and zones that restrict multi-family housing was straightforward.  
+
+Two key takeaways from this project:
+1. Applications of probability sampling with low measurement error are more enjoyable than application with high measurement error or survey nonresponse. 
+2. Measurement error and survey nonresponse are pressing issues in applications of probability sampling and warrant further exploration by the authors of this report. 
 
 \newpage
 
