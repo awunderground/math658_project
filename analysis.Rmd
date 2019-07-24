@@ -39,7 +39,8 @@ Washington D.C. is consistently ranked as one of the most-expensive places to li
 This study aims to understand the cost of housing and the nature of zoning in Washington, D.C. and in its four quadrants. As subsequent sections will demonstrate, there are rich sources of information about property values and zoning rules in Washington, D.C., but it is difficult to extract information about population parameters from those sources. A probability sample of residences is to be taken to estimate the value of residential properties and the proportion of properties with zoning that allows for multi-family housing. 
 
 ## 2. Target Population
-  - Clearly describe the *finite* population: All residential units in the District of Columbia. 
+
+Our target population is the set of all official residential housing units in the city of Washington, D.C., or at least all residential housing units included in the Master Address Repository. This population explicitly excludes any government or commercial units such as offices, museums, and public spaces. The target population also includes both occupied and unoccupied residential units, as well as individual units contained in multi-family residential buildings. 
 
 ## 3. Sampling Frame
 
@@ -86,13 +87,10 @@ if (!file.exists("data/ap.csv")) {
 }
 ```
 
-### Address Residential Units
-
-The first dataset is [Address Residential Units](http://opendata.dc.gov/datasets/address-residential-units)
-
-The dataset does not contain a variable for quadrant, so we extract quadrant from the full address.
-
 ```{r load-aru}
+# Adress Residential Units
+# The dataset does not contain a variable for quadrant, so we extract quadrant 
+# from the full address.
 aru <- read_csv("data/aru.csv") %>%
   rename_all(tolower) %>%
   select(unit_id, address_id, fulladdress, status, unitnum, unittype)
@@ -102,21 +100,15 @@ aru <- aru %>%
   mutate(quadrant = str_sub(fulladdress, start = -2, end = -1))
 ```
 
-Address Residential Units contains residential units with status set to "RETIRED". We drop these cases as well. 
-
 ```{r}
-count(aru, status) %>%
-  kable()
-```
-
-```{r}
+# ARU contains about 7,000 residential units with status set to "RETIRED". 
+# We drop these cases. 
 aru <- aru %>%
   filter(status != "RETIRE")
 ```
 
-### Address Points
-
 ```{r load-ap}
+# Address Points
 # load the data and convert the variable names to lower case
 ap <- read_csv("data/ap.csv", guess_max = 10000) %>%
   rename_all(tolower) %>%
@@ -126,35 +118,30 @@ ap <- read_csv("data/ap.csv", guess_max = 10000) %>%
          longitude, active_res_unit_count, res_type, active_res_occupancy_count) 
 ```
 
-Address Points contains residential units, non-residential units, and mixed-use units. Residential units and mixed-use units contain residences that belong to our sampling frame. We drop non-residential units. 
-
 ```{r}
-count(ap, res_type) %>%
-  kable()
-```
-
-```{r}
+# AP contains residential units, non-residential units, and mixed-use units. 
+# Residential units and mixed-use units contain residences that belong to our 
+# sampling frame. 
+# We drop non-residential units. 
 ap <- ap %>%
   filter(res_type != "NON RESIDENTIAL")
 ```
 
-Address points contains residential units with status set to "RETIRED". We drop these cases as well. 
-
 ```{r}
-count(ap, status) %>%
-  kable()
-```
-
-```{r}
+# Address points contains residential units with status set to "RETIRED". 
+# We drop these cases as well.
 ap <- ap %>%
   filter(status != "RETIRE")
 ```
 
-After the above filtering, there are 98 observations from Address Points and 3,706 observations in Address Residential Units that have missing addresses. We investigated joining the two datasets on `address_id` to fill in the address but all records missing an address in one dataset were missing an address in the other dataset. 
-
-We dropped the missing values which represented about 1.5 percent of observations in Address Residential Units and 0.07 percent of observations in Address Points. 
-
 ```{r}
+# After the above filtering, there are 98 observations from Address Points and 
+# 3,706 observations in Address Residential Units that have missing addresses. 
+# We investigated joining the two datasets on `address_id` to fill in the 
+# address but all records missing an address in one dataset were missing an 
+# address in the other dataset. We dropped the missing values which represented 
+# about 1.5% of observations in Address Residential Units and 0.07% of 
+# observations in Address Points.
 ap <- ap %>%
   filter(!is.na(fulladdress))
 
@@ -162,74 +149,73 @@ aru <- aru %>%
   filter(!is.na(fulladdress))
 ```
 
-```{r include = FALSE}
-missing_aru <- filter(aru, is.na(fulladdress))
-
-missing_aru <- left_join(missing_aru, ap, by = "address_id")
-
-# check the complement to see if any rows didn't match
-if (nrow(anti_join(missing_aru, ap, by = "address_id")) > 0) "ERROR"
-
-
-count(missing_aru, fulladdress.y)
-
-missing_ap <- filter(ap, is.na(fulladdress))
-
-missing_ap <- left_join(missing_ap, aru, by = "address_id")
-
-if (nrow(anti_join(missing_ap, aru, by = "address_id")) > 0) "ERROR"
-
-count(missing_ap, fulladdress.y)
-
-rm(missing_ap, missing_aru)
-```
-
-### Merge variables
-
-Address Points has interesting variables not present in Address Residential Units. So we merge the Address Points dataset with the Address Residential Units dataset. The join works for all but 572 cases, most of which are in a new building at the Wharf. 
-
 ```{r}
+# Address Points has interesting variables not present in ARU. 
+# So we merge the Address Points dataset with the Address Residential Units 
+# dataset. The join works for all but 572 cases, most of which are in a new 
+# building at the Wharf. 
 aru_expanded <- aru %>%
   select(-status) %>%
   left_join(ap, by = c("fulladdress", "address_id")) %>%
   select(quadrant = quadrant.x, everything(), -quadrant.y)
 
-anti_join(aru, ap, by = c("fulladdress", "address_id"))
-
 rm(aru)
 ```
 
+```{r}
 ### Combination
 
-Next, we need to drop addresses in the Address Points dataset that exist in the Address Residential Units dataset so we don't over count addresses in multi-dwelling units. 
+# Next, we need to drop addresses in the Address Points dataset that exist in 
+# the ARU dataset so we don't over count addresses in multi-dwelling units.
 
-```{r}
 ap <- ap %>%
   filter(!address_id %in% unique(aru_expanded$address_id))
 ```
 
-Finally, we can combine the two datasets to create a sampling frame that contains approximately every residential address in Washington D.C.
-
-
 ```{r}
+# Finally, we can combine the two datasets to create a sampling frame that 
+# contains approximately every residential address in Washington D.C.
+
 sampling_frame <- bind_rows(ap, aru_expanded) 
 
 rm(ap, aru_expanded)
-
-#summarize_all(addresses, list(~sum(is.na(.))))
 
 write_csv(sampling_frame, "data/sampling_frame.csv")
 ```
 
 ## 4. Primary Parameters
-  - D.C. sample mean of property values
-  - Quadrant sample mean of property values
-  - D.C. sample proportion of multi-family zoning
-  - Quadrant sample proportion of multi-family zoning
+
+Our primary parameters of interest were the average appraised property value of the D.C. residential units in our sampling frame and the proportion of units that allow for multi-family housing like apartments and condos. Our goal was not only to produce reliable estimates for the entire target population (for which we used a stratified random sample), but also to obtain reliable estimates for each of our strata -- i.e., for the NW, NE, SW, and SE quadrants of D.C. Furthermore, we sought to estimate the difference between the average appraised property of D.C. housing units in areas that allow for multi-family housing and the average appraised value of housing units in areas that do not allow for multi-family housing.  
+
+- Mean appraised property value in Washington, DC
+- Mean appraised property value in each quadrant of Washington, DC
+- Proportion of homes in Washington, DC in zones that allow for multi-family housing
+- Proportion of homes in each quadrant of Washington, DC in zones that allow for multi-family housing
 
 ## 5. Questionnaire/Instrument
 
+Although we did visit several of the sample units in person, not much relevant information could have been gained from going to our housing units. In particular, we did not have sufficient knowledge or information to accurately appraise a unit’s property value, nor could we have identified a unit’s zone district type. Nonetheless, even though we had to use online sources to obtain our data, we had to manually enter each address into a given website; in other words, the data for our parameters of interest were not already neatly organized, and it would not have been feasible for us to have obtained measurements for all the units in our sampling frame (thus necessitating a sample survey).      
+
+Our primary instruments for measuring and capturing data were the government housing database web portals and Redfin:
+
+- I. DC Zone Map 
+  - http://maps.dcoz.dc.gov/zr16/
+- II. Redfin 
+  - https://www.redfin.com
+- III. DC Tax Service Web Portal 
+  - https://www.taxpayerservicecenter.com/RP_Search.jsp?search_type=Assessment
+
+Zone district types were captured with the official DC Zoning Map (I). Once the street number, street name, and quadrant are entered, the website generates the address’s various zoning data, including its Zone district type. Once the type was identified, we recorded the following data points for each residential housing unit in our sample: (1) Street Number, (2) Street Name, (3) Quadrant, (4) Unit Number, (5) Unit Type, (6) Zone Type. 
+
+Additionally, we captured the appraised values (Land and Improvement values) for each unit with Redfin (II) and the DC Tax Service web portal (III). First, with Redfin, we entered the street number, street name, quadrant, and city of each unit to return various property details, from which we obtained the Land and Addition (Improvement) dollar amounts of the unit. If we were not able to acquire the data points through Redfin, we then utilized the DC Tax Service web portal with the same data entry to obtain the Land and Improvement values of the properties. For condominiums and single-family units, we obtained unit-specific appraised values, while for multi-family apartments, we obtained their total building appraised values. These two additional data points were then appended to the above six data points for the selected sample units: (7) Land Value, (8) Improvement Value. 
+
 ## 6. Pilot Survey
+
+In order to determine the sample allocation for our stratified random sample, we first needed to obtain an estimate for the variance of the appraised property values in our target population. By Theorem 9.1 (Wright 165), the sample variance $s^2$ is an unbiased estimator of the population variance $S^2$ under simple random sampling. Therefore, for our pilot survey, we took a simple random sample of size 25 from each of the four D.C. quadrants and combined these samples to obtain a stratified random sample of size 100 (though computers technically use deterministic methods, we used R to approximate the selection of this stratified random sample). 
+
+By Problem 9.A.3 (Wright 169), when a variable of interest can take on only the values 0 and 1, the sample variance can be rewritten as $s^2 = \frac{n}{n - 1} \hat{p} (1 - \hat{p})$. Since $n$ is arbitrary, then this result also holds for $N$. In other words, when we are trying to estimate a proportion, the population variance can be written as $S^2 = \frac{N}{N - 1} p(1 - p)$. Since $p(1 - p)$ attains its maximum value at p = 0.5, we decided to be conservative by simply “assuming” that the proportion of housing units in our population that in zones that don’t restrict multi-family equals 0.5. Thus, we did not need to calculate the pilot sample variance for our zoning type parameter.
+
+For the appraised property value, on the other hand, we attempted to enter each of the addresses into the DC Tax Service web portal and Redfin. Unfortunately, there were missing values for several of the housing units. In an attempt to rectify this problem, we recognized that since we took a simple random sample from each quadrant, then, within each quadrant, Theorem 9.2 (Wright 169) implies that the sample proportion of housing units with missing values is an unbiased estimator of the true proportion of housing units with missing values. Since it would not have been feasible to determine exactly how many housing units in our population have missing values, we therefore calculated the sample proportion of missing values for each quadrant and computed “adjusted” $N_h$ values for each of our four strata. Consequently, we ended up with an “adjusted” $N$ value, which was our estimated number of housing units that did not have missing values. These were the $N_h$ and $N$ values that we used in our sample selection and allocation algorithms.   
 
 ```{r write-pilot-survey}
 set.seed(20190714)
@@ -312,21 +298,21 @@ By Wright (12.4), $V(\bar{y}_{str}) = \sum_{h = 1}^H (\frac{N_h}{N})^2 V(\bar{y}
 
 \hfill
 
-$V(\bar{y}_h) = (\frac{N_h}{N})^2 \frac{N_h - n_h}{N_h} \frac{S^2_h}{n_h}$
+$V(\bar{y}_h) = \frac{N_h - n_h}{N_h} \frac{S^2_h}{n_h}$ (By Wright Theorem 9.1, since we are taking a simple random sample from each stratum $h$)
 
-$V(\bar{y}_h) = (\frac{N_h^2}{N^2}) (1 - \frac{n_h}{N_h}) \frac{S^2_h}{n_h}$
+$V(\bar{y}_h) = (1 - \frac{n_h}{N_h}) \frac{S^2_h}{n_h}$
 
-$V(\bar{y}_h) = (\frac{N_h^2S_h^2}{N^2})(\frac{1}{n_h}) - \frac{N^2_h n_h S^2_h}{N^2 N_h n_h}$
+$V(\bar{y}_h) = S_h^2(\frac{1}{n_h}) - \frac{S^2_h}{N_h}$
 
-$V(\bar{y}_h) = (\frac{N_h^2S_h^2}{N^2})(\frac{1}{n_h}) - \frac{N_h S^2_h}{N^2}$
+$V(\bar{y}_h) = S_h^2(1 - \frac{1}{1 \cdot 2} - \frac{1}{2 \cdot 3} - ...  - \frac{1}{n_h(n_h - 1)}) - \frac{S^2_h}{N_h}$
 
-$V(\bar{y}_h) = (\frac{N_h^2S_h^2}{N^2})(1 - \frac{1}{1 \cdot 2} - \frac{1}{2 \cdot 3} - ...  - \frac{1}{n_h(n_h - 1)}) - \frac{N_h S^2_h}{N^2}$
-
-$V(\bar{y}_h) = \frac{N_h(N_h - 1)S^2_h}{N^2} - \frac{N^2_hS^2_h}{N^2 \cdot 1 \cdot 2} - \frac{N^2_hS^2_h}{N^2 \cdot 2 \cdot 3} - ... - - \frac{N^2_hS^2_h}{N^2 n_h(n_h - 1)}$
+$V(\bar{y}_h) = \frac{(N_h - 1)S^2_h}{N_h} - \frac{S^2_h}{1 \cdot 2} - \frac{S^2_h}{2 \cdot 3} - ... - - \frac{S^2_h}{n_h(n_h - 1)}$
 
 \hfill
 
 Decomposition of $V(\bar{y}_{str})$
+
+$V(\bar{y}_{str}) = \sum_{h = 1}^H V(\bar{y}_{str})$ (by the independence of $\bar{y}_1,...,\bar{y}$)
 
 $V(\bar{y}_{str}) = \sum_{h = 1}^H \frac{N_h(N_h - 1)S^2_h}{N^2}$
 
@@ -843,7 +829,8 @@ svyby(~multifamily,            # variable to estimate
 
 ## 10. Discussion
 
-data quality mattered a lot!
+
+
 
 
 
